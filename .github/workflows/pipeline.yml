@@ -1,0 +1,19 @@
+name: Pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build
+    uses: ./.github/workflows/ci.yml
+  cd:
+    name: OCI Image Packaging
+    needs: ci
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/cd.yml

@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+set -eu
+cd "$(dirname "$0")/../.."
+rm -rf release
+mkdir -p release/image/executable
+cp bazel-bin/app_bin_deploy.jar release/image/executable/
+cp MODULE.bazel MODULE.bazel.lock .bazelrc .bazelversion maven_install.json release/
+cp image/BUILD.bazel release/image/

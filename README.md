@@ -9,20 +9,30 @@ Install [Bazelisk](https://bazel.build/install/bazelisk). It reads `.bazelversio
 ## Standard commands
 
 ```sh
-bazel build //...
-bazel test //...
+bazel build //:app_bin_deploy.jar //:lambda_deployment_package
+bazel test --build_tests_only //...
 bazel coverage //:all_tests --combined_report=lcov
-bazel build //:container_tarball
-bazel build //:lambda_deployment_package
 ```
 
-`bazel test //...` runs the JUnit suite, Checkstyle, and SpotBugs. Aspect ruleset telemetry is disabled in `.bazelrc`. `bazel coverage` writes the combined LCOV report under Bazel's output tree. The container target creates a multi-platform OCI archive tagged `template-pure-java:latest`; use `bazel cquery --output=files //:container_tarball` to print its output path.
+`bazel test --build_tests_only //...` runs the JUnit suite, Checkstyle, and SpotBugs. Aspect ruleset telemetry is disabled in `.bazelrc`. `bazel coverage` writes the combined LCOV report under Bazel's output tree. Image packaging runs separately from the application build; `bazel cquery --output=files //image:oci_image_tarball` prints the OCI archive path after the fleet artifact is extracted.
 
 For local lint output, use:
 
 ```sh
 bazel build --config=lint //:app //:composition //:entrypoint //:lambda_entrypoint //:all_tests
 ```
+
+## Release Pipeline
+
+`.github/workflows/pipeline.yml` runs CI on pull requests and pushes to `main`. On a successful main push, the same pipeline run continues to OCI Image Packaging. The jobs are defined in separate reusable workflow files.
+
+CI builds, tests, and measures coverage on native Linux/ARM64 (`ubuntu-24.04-arm`), using the same commands as local development. Bazel targets the native host platform. It stages the deploy JAR and image-build definitions, then uploads `release-artifact-<commit SHA>`.
+
+CD downloads that artifact without checking out the repository or recompiling Java. The archive contains `image/executable/app_bin_deploy.jar`, `image/BUILD.bazel`, `MODULE.bazel`, `MODULE.bazel.lock`, `.bazelrc`, `.bazelversion`, and `maven_install.json`. In this standalone workspace, `bazel build //image:oci_image_tarball` assembles a Linux/ARM64 OCI archive, uploaded as `oci-image-<commit SHA>`. Bazel image rules perform packaging without Docker.
+
+Local builds provide development feedback; their outputs are never release inputs. Use the explicit application targets above for local development: `bazel build //...` includes image targets that require the staged fleet JAR. Deployment infrastructure must select Linux/ARM64. Registry publication, deployment, and runtime testing belong to the consuming project's pipeline.
+
+Concepts: [Build and OCI Image Packaging](https://app.notion.com/p/3f90a2b787558157a5c2cf7a9b7e92cc?pvs=204).
 
 ## IDE setup
 
@@ -131,13 +141,14 @@ The template currently supports two deployment paths: OCI/container through `Mai
 
 ### OCI / Container (`Main`)
 
-* Build `//:container_tarball` for a multi-platform OCI archive. This process can also run locally with `bazel run //:app_bin -- '<event-json>'`.
+* After extracting the fleet release artifact, build `//image:oci_image_tarball` for a Linux/ARM64 OCI archive. This process can also run locally with `bazel run //:app_bin -- '<event-json>'`.
 * The process launcher defaults to `-XX:MaxRAMPercentage=75.0`. The OCI images set the same option through `JAVA_TOOL_OPTIONS`, since their base image runs the deploy JAR directly rather than the Bazel launcher.
 
 To keep only Lambda, remove:
 
-* `src/main/java/io/template/Main.java`, its exclusion from the `app` source glob, and `entrypoint`, `app_bin`, `app_layer`, `app_image_amd64`, `app_image_arm64`, `app_image`, `container_image`, and `container_tarball` in `BUILD.bazel`
-* The `entrypoint` references in both lint targets, the OCI and `pkg_tar` loads, and the container command and CI step
+* `src/main/java/io/template/Main.java`, its exclusion from the `app` source glob, and `entrypoint` and `app_bin` in `BUILD.bazel`
+* The `entrypoint` references in both lint targets and the `app_bin_deploy.jar` build target in CI
+* `image/`, `.github/scripts/stage-release`, `.github/workflows/cd.yml`, the `cd` job in `pipeline.yml`, and CI's image-artifact staging and upload steps
 * The `rules_oci` dependency, `distroless` extension, and its `use_repo` block in `MODULE.bazel`
 * The Shutdown section and `closeResources` in `composition/AWSClientsModule.java`, including the unused `Injector` import
 

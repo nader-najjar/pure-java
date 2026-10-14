@@ -49,11 +49,10 @@ distroless.pull(
     name = "distroless_java25",
     digest = "sha256:ca60da1345c0f17b6d019049e6749e15f10fd3c0da86dec938d2b4ec565d0629",
     image = "gcr.io/distroless/java25-debian13",
-    platforms = ["linux/amd64", "linux/arm64/v8"],
+    platforms = ["linux/arm64/v8"],
 )
 use_repo(
     distroless,
     "distroless_java25",
-    "distroless_java25_linux_amd64",
     "distroless_java25_linux_arm64_v8",
 )

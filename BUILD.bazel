@@ -1,7 +1,6 @@
 load("//tools/lint:linters.bzl", "checkstyle_test", "spotbugs_test")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library", "java_test")
-load("@rules_pkg//:pkg.bzl", "pkg_tar", "pkg_zip")
-load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load")
+load("@rules_pkg//:pkg.bzl", "pkg_zip")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -133,49 +132,6 @@ java_test(
         "@maven//:ch_qos_logback_logback_classic",
         "@maven//:org_junit_platform_junit_platform_console_standalone",
     ],
-)
-
-pkg_tar(
-    name = "app_layer",
-    srcs = [":app_bin_deploy.jar"],
-    package_dir = "/app",
-)
-
-oci_image(
-    name = "app_image_amd64",
-    base = "@distroless_java25_linux_amd64",
-    cmd = ["/app/app_bin_deploy.jar"],
-    env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
-    tars = [":app_layer"],
-)
-
-oci_image(
-    name = "app_image_arm64",
-    base = "@distroless_java25_linux_arm64_v8",
-    cmd = ["/app/app_bin_deploy.jar"],
-    env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
-    tars = [":app_layer"],
-)
-
-oci_image_index(
-    name = "app_image",
-    images = [
-        ":app_image_amd64",
-        ":app_image_arm64",
-    ],
-)
-
-oci_load(
-    name = "container_image",
-    format = "oci",
-    image = ":app_image",
-    repo_tags = ["template-pure-java:latest"],
-)
-
-filegroup(
-    name = "container_tarball",
-    srcs = [":container_image"],
-    output_group = "tarball",
 )
 
 checkstyle_test(

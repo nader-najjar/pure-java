@@ -37,3 +37,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Fleet release artifacts ###
+/release/
+/image/executable/

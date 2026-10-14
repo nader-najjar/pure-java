@@ -1,29 +1,29 @@
 name: CI
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: bazel-contrib/setup-bazel@8cb04a772ab4c1eb984e9c1b493a182e96c5e425 # 0.19.0
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}
+          disk-cache: ${{ github.workflow }}-${{ github.job }}
           repository-cache: true
           cache-save: ${{ github.event_name != 'pull_request' }}
-      - name: Run tests and static analysis
-        run: bazel test //...
-      - name: Generate coverage report
-        run: bazel coverage //:all_tests --combined_report=lcov
-      - name: Build multi-platform container archive
-        run: bazel build //:container_tarball
-      - name: Build Lambda deployment package
-        run: bazel build //:lambda_deployment_package
+      - run: bazel build //:app_bin_deploy.jar //:lambda_deployment_package
+      - run: bazel test --build_tests_only //...
+      - run: bazel coverage //:all_tests --combined_report=lcov
+      - run: ./.github/scripts/stage-release
+      - run: tar -czf release-artifact.tar.gz -C release .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-artifact-${{ github.sha }}
+          path: release-artifact.tar.gz
+          if-no-files-found: error

@@ -1,0 +1,31 @@
+name: OCI Image Packaging
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  image_packaging:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-artifact-${{ github.sha }}
+      - run: tar -xzf release-artifact.tar.gz
+      - uses: bazel-contrib/setup-bazel@8cb04a772ab4c1eb984e9c1b493a182e96c5e425 # 0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-${{ github.job }}
+          repository-cache: true
+          cache-save: ${{ github.event_name != 'pull_request' }}
+      - run: bazel build //image:oci_image_tarball
+      - run: |
+          mkdir -p build
+          cp "$(bazel cquery --output=files //image:oci_image_tarball)" build/oci-image.tar
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: oci-image-${{ github.sha }}
+          path: build/oci-image.tar
+          if-no-files-found: error

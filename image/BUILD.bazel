@@ -1,0 +1,25 @@
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+
+package(default_visibility = ["//visibility:public"])
+
+pkg_tar(
+    name = "app_layer",
+    srcs = ["executable/app_bin_deploy.jar"],
+    strip_prefix = "executable",
+    package_dir = "/app",
+)
+
+oci_image(
+    name = "app_image",
+    base = "@distroless_java25_linux_arm64_v8",
+    cmd = ["/app/app_bin_deploy.jar"],
+    env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
+    tars = [":app_layer"],
+)
+
+pkg_tar(
+    name = "oci_image_tarball",
+    srcs = [":app_image"],
+    strip_prefix = "app_image",
+)
