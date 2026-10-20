@@ -137,7 +137,7 @@ The template currently supports two deployment paths: OCI/container through `Mai
 To keep only Lambda, remove:
 
 * `src/main/java/io/template/Main.java`, its exclusion from the `app` source glob, and `entrypoint`, `app_bin`, `app_layer`, `app_image_amd64`, `app_image_arm64`, `app_image`, `container_image`, and `container_tarball` in `BUILD.bazel`
-* The `entrypoint` references in both lint targets, the OCI and `pkg_tar` loads, and the container command and CI step
+* The `entrypoint` references in both lint targets, the OCI and `pkg_tar` loads, and the container command
 * The `rules_oci` dependency, `distroless` extension, and its `use_repo` block in `MODULE.bazel`
 * The Shutdown section and `closeResources` in `composition/AWSClientsModule.java`, including the unused `Injector` import
 
@@ -151,7 +151,11 @@ To keep only Lambda, remove:
 To keep only OCI/container deployment, remove:
 
 * `src/main/java/io/template/LambdaHandler.java`, its exclusion from the `app` source glob, and `lambda_entrypoint`, `lambda_bin`, and `lambda_deployment_package` in `BUILD.bazel`
-* The `lambda_entrypoint` references in both lint targets, the `pkg_zip` load, and the Lambda build command and CI step
+* The `lambda_entrypoint` references in both lint targets, the `pkg_zip` load, and the Lambda build command
 * `com.amazonaws:aws-lambda-java-core` from `MODULE.bazel`
 
 After removing a deployment path, update this Outputs section and regenerate the Maven lockfile using the workflow above. Keep shared environment, execution, composition, logging, and the DynamoDB sample unless you also choose to remove that sample.
+
+## License
+
+All rights reserved. See [LICENSE](LICENSE).
