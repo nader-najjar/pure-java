@@ -1,4 +1,4 @@
-# template-pure-java
+# pure-java
 
 A small Java service template built with Bazel. Bazel owns Java compilation, dependency resolution, tests, static analysis, coverage, and OCI image construction.
 
@@ -9,11 +9,15 @@ Install [Bazelisk](https://bazel.build/install/bazelisk). It reads `.bazelversio
 ## Standard commands
 
 ```sh
-bazel build //...
+bazel build //... //:app_bin_deploy.jar
 bazel test //...
 bazel coverage //:all_tests --combined_report=lcov
+```
+
+Build the OCI archive separately (OCI-only targets are excluded from `//...` builds):
+
+```sh
 bazel build //:container_tarball
-bazel build //:lambda_deployment_package
 ```
 
 `bazel test //...` runs the JUnit suite, Checkstyle, and SpotBugs. Aspect ruleset telemetry is disabled in `.bazelrc`. `bazel coverage` writes the combined LCOV report under Bazel's output tree. The container target creates a multi-platform OCI archive tagged `template-pure-java:latest`; use `bazel cquery --output=files //:container_tarball` to print its output path.
@@ -21,7 +25,7 @@ bazel build //:lambda_deployment_package
 For local lint output, use:
 
 ```sh
-bazel build --config=lint //:app //:composition //:entrypoint //:lambda_entrypoint //:all_tests
+bazel build --config=lint //:app //:composition //:entrypoint //:all_tests
 ```
 
 ## IDE setup
@@ -83,19 +87,17 @@ AWS SDK versions are managed by the BOM in `MODULE.bazel`; the application uses 
 
 ## Application boundaries
 
-`Main` and `LambdaHandler` stay at the package root. `composition` holds Guice modules, `environment` groups environment parsing, errors, and models, and `execution` holds the per-input workflow. `shared` retains stateless utilities.
+`Main` stays at the package root. `composition` holds Guice modules, `environment` groups environment parsing, errors, and models, and `execution` holds the per-input workflow. `shared` retains stateless utilities.
 
 | Target | Responsibility |
 | --- | --- |
 | `//:app` | Execution, business logic, environment configuration, and shared utilities |
 | `//:composition` | Strict Guice wiring and environment/AWS client providers |
 | `//:entrypoint` | Process entry point and shutdown hook |
-| `//:lambda_entrypoint` | AWS Lambda stream handler |
 | `//:logging` | Shared JSON logging configuration and runtime |
 | `//:app_bin` | Runnable process and deploy JAR |
-| `//:lambda_bin` | Handler deploy JAR with runtime dependencies |
 
-Checkstyle and SpotBugs cover every production Java source and the tests. Coverage measures `//:app`, excluding both entrypoints and injection wiring to match the legacy scope. The report measures line coverage and currently has no enforced minimum. The composition test constructs strict wiring with substituted environment and AWS clients; entrypoint and shutdown integration tests are deferred.
+Checkstyle and SpotBugs cover every production Java source and the tests. Coverage measures `//:app`, excluding the entrypoint and injection wiring to match the legacy scope. The report measures line coverage and currently has no enforced minimum. The composition test constructs strict wiring with substituted environment and AWS clients; entrypoint and shutdown integration tests are deferred.
 
 ## Dependency updates
 
@@ -127,34 +129,10 @@ Correctness is guaranteed by idempotency: dying at any point (including SIGKILL,
 
 ## Outputs
 
-The template currently supports two deployment paths: OCI/container through `Main`, and AWS Lambda through `LambdaHandler`. Keep only the path your application uses and remove the other using the instructions below. Both paths share execution and business logic. AWS integrations are examples; other cloud providers can be added.
-
 ### OCI / Container (`Main`)
 
 * Build `//:container_tarball` for a multi-platform OCI archive. This process can also run locally with `bazel run //:app_bin -- '<event-json>'`.
 * The process launcher defaults to `-XX:MaxRAMPercentage=75.0`. The OCI images set the same option through `JAVA_TOOL_OPTIONS`, since their base image runs the deploy JAR directly rather than the Bazel launcher.
-
-To keep only Lambda, remove:
-
-* `src/main/java/io/template/Main.java`, its exclusion from the `app` source glob, and `entrypoint`, `app_bin`, `app_layer`, `app_image_amd64`, `app_image_arm64`, `app_image`, `container_image`, and `container_tarball` in `BUILD.bazel`
-* The `entrypoint` references in both lint targets, the OCI and `pkg_tar` loads, and the container command
-* The `rules_oci` dependency, `distroless` extension, and its `use_repo` block in `MODULE.bazel`
-* The Shutdown section and `closeResources` in `composition/AWSClientsModule.java`, including the unused `Injector` import
-
-### AWS Lambda (`LambdaHandler`)
-
-* Handler: `io.template.LambdaHandler::handleRequest`, on the `java25` runtime.
-* The event JSON reaches `Executor` as its single input argument. The injector is reused across invocations, and logs include the AWS request ID.
-* Build `//:lambda_deployment_package` to produce `bazel-bin/lambda-deployment-package.zip`. The ZIP contains `lib/lambda_bin_deploy.jar`, a Bazel deploy JAR bundling the handler, logging configuration, and runtime dependencies. ZIP timestamps are fixed and build stamping is disabled.
-* Deploy that ZIP with your infrastructure tool. Lambda clients live for the execution environment's lifetime; the process Shutdown section does not apply.
-
-To keep only OCI/container deployment, remove:
-
-* `src/main/java/io/template/LambdaHandler.java`, its exclusion from the `app` source glob, and `lambda_entrypoint`, `lambda_bin`, and `lambda_deployment_package` in `BUILD.bazel`
-* The `lambda_entrypoint` references in both lint targets, the `pkg_zip` load, and the Lambda build command
-* `com.amazonaws:aws-lambda-java-core` from `MODULE.bazel`
-
-After removing a deployment path, update this Outputs section and regenerate the Maven lockfile using the workflow above. Keep shared environment, execution, composition, logging, and the DynamoDB sample unless you also choose to remove that sample.
 
 ## License
 

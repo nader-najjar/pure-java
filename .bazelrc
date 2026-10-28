@@ -17,5 +17,5 @@ build:lint --@aspect_rules_lint//lint:fail_on_violation
 
 test --test_output=errors
 
-# Match the legacy coverage scope: exclude both entrypoints and injection wiring.
+# Match the legacy coverage scope: exclude the entrypoint and injection wiring.
 coverage --instrumentation_filter=^//:app$
