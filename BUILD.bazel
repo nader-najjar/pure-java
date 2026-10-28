@@ -1,6 +1,6 @@
 load("//tools/lint:linters.bzl", "checkstyle_test", "spotbugs_test")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library", "java_test")
-load("@rules_pkg//:pkg.bzl", "pkg_tar", "pkg_zip")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load")
 
 package(default_visibility = ["//visibility:private"])
@@ -18,7 +18,6 @@ java_library(
         exclude = [
             "src/main/java/io/template/Main.java",
             "src/main/java/io/template/composition/**/*.java",
-            "src/main/java/io/template/LambdaHandler.java",
         ],
     ),
     deps = [
@@ -60,38 +59,10 @@ java_library(
 )
 
 java_library(
-    name = "lambda_entrypoint",
-    srcs = ["src/main/java/io/template/LambdaHandler.java"],
-    deps = [
-        ":app",
-        ":composition",
-        "@maven//:com_amazonaws_aws_lambda_java_core",
-        "@maven//:com_google_inject_guice",
-        "@maven//:org_slf4j_slf4j_api",
-    ],
-)
-
-java_library(
     name = "logging",
     resources = glob(["src/main/resources/**"]),
     resource_strip_prefix = "src/main/resources",
     runtime_deps = ["@maven//:ch_qos_logback_logback_classic"],
-)
-
-# The deploy JAR bundles the handler and its runtime dependencies for Lambda.
-java_binary(
-    name = "lambda_bin",
-    create_executable = False,
-    stamp = 0,
-    runtime_deps = [":lambda_entrypoint", ":logging"],
-)
-
-pkg_zip(
-    name = "lambda_deployment_package",
-    srcs = [":lambda_bin_deploy.jar"],
-    out = "lambda-deployment-package.zip",
-    package_dir = "lib",
-    stamp = 0,
 )
 
 java_binary(
@@ -137,12 +108,14 @@ java_test(
 
 pkg_tar(
     name = "app_layer",
+    tags = ["manual"],
     srcs = [":app_bin_deploy.jar"],
     package_dir = "/app",
 )
 
 oci_image(
     name = "app_image_amd64",
+    tags = ["manual"],
     base = "@distroless_java25_linux_amd64",
     cmd = ["/app/app_bin_deploy.jar"],
     env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
@@ -151,6 +124,7 @@ oci_image(
 
 oci_image(
     name = "app_image_arm64",
+    tags = ["manual"],
     base = "@distroless_java25_linux_arm64_v8",
     cmd = ["/app/app_bin_deploy.jar"],
     env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
@@ -159,6 +133,7 @@ oci_image(
 
 oci_image_index(
     name = "app_image",
+    tags = ["manual"],
     images = [
         ":app_image_amd64",
         ":app_image_arm64",
@@ -167,6 +142,7 @@ oci_image_index(
 
 oci_load(
     name = "container_image",
+    tags = ["manual"],
     format = "oci",
     image = ":app_image",
     repo_tags = ["template-pure-java:latest"],
@@ -174,6 +150,7 @@ oci_load(
 
 filegroup(
     name = "container_tarball",
+    tags = ["manual"],
     srcs = [":container_image"],
     output_group = "tarball",
 )
@@ -185,7 +162,6 @@ checkstyle_test(
         ":app",
         ":composition",
         ":entrypoint",
-        ":lambda_entrypoint",
     ],
 )
 
@@ -196,6 +172,5 @@ spotbugs_test(
         ":app",
         ":composition",
         ":entrypoint",
-        ":lambda_entrypoint",
     ],
 )
