@@ -6,9 +6,9 @@ load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load")
 package(default_visibility = ["//visibility:private"])
 
 exports_files([
-    "checkstyle.xml",
+    "checkstyle-configuration.xml",
     "maven_install.json",
-    "spotbugs-exclude.xml",
+    "spotbugs-configuration.xml",
 ], visibility = ["//tools/lint:__pkg__"])
 
 java_library(
