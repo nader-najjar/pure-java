@@ -17,8 +17,6 @@ import org.slf4j.LoggerFactory;
  * The following classes must not have associated unit tests - smoke tests are used in their place:
  *   - `Main.java`
  *   - `composition/*`
- *
- * <p>For the shutdown pattern, see the README's Shutdown section.
  */
 public final class Main {
 
