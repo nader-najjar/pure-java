@@ -1,4 +1,4 @@
-load("//:custom-rules.bzl", "checkstyle_test", "spotbugs_test")
+load("//:custom-rules.bzl", "checkstyle_test", "java_runtime_files", "spotbugs_test")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library", "java_test")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load")
@@ -7,6 +7,7 @@ package(default_visibility = ["//visibility:private"])
 
 exports_files([
     "checkstyle-configuration.xml",
+    "java_runtime_notices.patch",
     "maven_install.json",
     "spotbugs-configuration.xml",
 ], visibility = ["//visibility:private"])
@@ -113,31 +114,60 @@ pkg_tar(
     package_dir = "/app",
 )
 
-oci_image(
-    name = "app_image_amd64",
+java_runtime_files(
+    name = "java_runtime_files",
     tags = ["manual"],
-    base = "@distroless_java25_linux_amd64",
-    cmd = ["/app/app_bin_deploy.jar"],
-    env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
-    tars = [":app_layer"],
+    target_compatible_with = ["@platforms//os:linux"]
+)
+
+pkg_tar(
+    name = "java_runtime_layer",
+    srcs = [":java_runtime_files"],
+    preserve_mode = True,
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//test/image:__pkg__"]
 )
 
 oci_image(
-    name = "app_image_arm64",
+    name = "app_image_native",
     tags = ["manual"],
-    base = "@distroless_java25_linux_arm64_v8",
+    target_compatible_with = ["@platforms//os:linux"],
+    base = select({
+        "@platforms//cpu:x86_64": "@debian_linux_amd64",
+        "@platforms//cpu:aarch64": "@debian_linux_arm64_v8"
+    }),
+    entrypoint = ["/opt/java/bin/java", "-jar"],
     cmd = ["/app/app_bin_deploy.jar"],
-    env = {"JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0"},
-    tars = [":app_layer"],
+    env = {
+        "JAVA_HOME": "/opt/java",
+        "JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=75.0",
+        "LANG": "C.UTF-8",
+        "PATH": "/opt/java/bin:$PATH"
+    },
+    user = "65532:65532",
+    workdir = "/app",
+    tars = [":java_runtime_layer", ":app_layer"]
+)
+
+alias(
+    name = "app_image_amd64",
+    actual = ":app_image_native",
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux", "@platforms//cpu:x86_64"]
+)
+
+alias(
+    name = "app_image_arm64",
+    actual = ":app_image_native",
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux", "@platforms//cpu:aarch64"]
 )
 
 oci_image_index(
     name = "app_image",
     tags = ["manual"],
-    images = [
-        ":app_image_amd64",
-        ":app_image_arm64",
-    ],
+    images = [":app_image_native"]
 )
 
 oci_load(
