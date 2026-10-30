@@ -12,7 +12,7 @@ build --javacopt=UTF-8
 build --javacopt=-Xlint:all
 build --javacopt=-Werror
 
-build:lint --aspects=//tools/lint:linters.bzl%checkstyle,//tools/lint:linters.bzl%spotbugs
+build:lint --aspects=//:custom-rules.bzl%checkstyle,//:custom-rules.bzl%spotbugs
 build:lint --@aspect_rules_lint//lint:fail_on_violation
 
 test --test_output=errors

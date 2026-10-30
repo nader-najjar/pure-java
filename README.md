@@ -71,15 +71,19 @@ Java best practices.
 
 ## 4. IDE Setup
 
+Use this command to print the JDK home selected by Bazel for the application:
+
+```sh
+echo "$(bazel info output_base)/$(bazel cquery @rules_java//toolchains:current_java_runtime --output=starlark --starlark:expr='providers(target)["TemplateVariableInfo"].variables["JAVABASE"]')"
+```
+
 ### IntelliJ IDEA Ultimate
 
 Follow the instructions here: <https://app.notion.com/p/f4c0a2b7875583b79fa5015d58412fea>
-    * Use the command `bazel run //tools/ide:print_java_home` to get the JDK home selected by Bazel
 
 ### Visual Studio Code
 
 Follow the instructions here: <https://app.notion.com/p/4fd0a2b787558204a6c001d0b034f698>
-    * Use the command `bazel run //tools/ide:print_java_home` to get the JDK home selected by Bazel
 
 Skip Maven/Gradle-specific steps.
 
