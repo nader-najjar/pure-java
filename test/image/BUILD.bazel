@@ -1,0 +1,10 @@
+load("@rules_python//python:defs.bzl", "py_test")
+
+py_test(
+    name = "java_runtime_layer_test",
+    srcs = ["java_runtime_layer_test.py"],
+    args = ["$(location //:java_runtime_layer)"],
+    data = ["//:java_runtime_layer"],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux"]
+)
