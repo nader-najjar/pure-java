@@ -1,4 +1,4 @@
-load("//tools/lint:linters.bzl", "checkstyle_test", "spotbugs_test")
+load("//:custom-rules.bzl", "checkstyle_test", "spotbugs_test")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library", "java_test")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load")
@@ -9,7 +9,7 @@ exports_files([
     "checkstyle-configuration.xml",
     "maven_install.json",
     "spotbugs-configuration.xml",
-], visibility = ["//tools/lint:__pkg__"])
+], visibility = ["//visibility:private"])
 
 java_library(
     name = "app",
@@ -153,6 +153,18 @@ filegroup(
     tags = ["manual"],
     srcs = [":container_image"],
     output_group = "tarball",
+)
+
+java_binary(
+    name = "checkstyle_bin",
+    main_class = "com.puppycrawl.tools.checkstyle.Main",
+    runtime_deps = ["@maven//:com_puppycrawl_tools_checkstyle"],
+)
+
+java_binary(
+    name = "spotbugs_bin",
+    main_class = "edu.umd.cs.findbugs.LaunchAppropriateUI",
+    runtime_deps = ["@maven//:com_github_spotbugs_spotbugs"],
 )
 
 checkstyle_test(
