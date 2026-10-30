@@ -1,121 +1,106 @@
 # pure-java
 
-Java best practices.
+> Java best practices for a standalone process.
 
-&nbsp;
+### 1. Prerequisites
 
-## 1. Local Development Machine Prerequisites
+---
 
-* Install Bazelisk as per <https://bazel.build/install/bazelisk>
-  * Bazelisk reads `.bazelversion`; Bazel downloads the project's Java toolchain
+Install [Bazelisk](https://bazel.build/install/bazelisk). It reads `.bazelversion`; Bazel supplies the Java toolchain. Run commands from the repository root.
 
-&nbsp;
+### 2. Build and Test
 
-## 2. Main Build Tasks
+---
 
-### `bazel build //... //:app_bin_deploy.jar`
+#### Everyday Commands
 
-* Compiles the code under `src`
-* Builds the application deploy JAR
+| Goal | Command |
+| --- | --- |
+| Compile production code | `bazel build //:entrypoint` |
+| Unit tests only | `bazel test //:all_tests` |
+| Checkstyle and SpotBugs | `bazel test //:checkstyle //:spotbugs` |
+| Coverage | `bazel coverage //:all_tests --combined_report=lcov` |
+| Package without checks | `bazel build //:app_bin_deploy.jar` |
+| Full verification | `bazel build //... //:app_bin_deploy.jar && bazel test //... && bazel coverage //:all_tests --combined_report=lcov` |
+| Clean outputs | `bazel clean` |
+| List targets | `bazel query //...` |
 
-### `bazel test //...`
+Tests and packaging compile their prerequisites automatically. Coverage measures `//:app`, excluding the entrypoint and composition; no minimum is enforced.
 
-* Runs unit tests
-* Runs Checkstyle
-* Runs SpotBugs
+Run one test class, or one method:
 
-### `bazel coverage //:all_tests --combined_report=lcov`
+```sh
+bazel test //:all_tests --test_arg='--include-classname=io\.template\.samplebusinesslayer\.CalculatorTest'
+bazel test //:all_tests --test_arg='--include-classname=io\.template\.samplebusinesslayer\.CalculatorTest' --test_arg='--include-methodname=.*throwsOnDivisionByZero'
+```
 
-* Runs coverage
+#### Outputs
 
-### `bazel build //:container_tarball`
+- Application JAR: `bazel-bin/app_bin_deploy.jar`.
+- Test logs: `bazel-testlogs/<target>/test.log`.
+- Combined coverage: `$(bazel info output_path)/_coverage/_coverage_report.dat`.
 
-* Builds the OCI archive separately from the normal build
+### 3. Development Workflows
 
-### `bazel clean`
+---
 
-* Removes build output directories
+#### Dependency Management
 
-### `bazel help`
+- Add/remove: edit Maven coordinates in `MODULE.bazel` and the consuming target's `deps` in `BUILD.bazel`.
+- Upgrade/pin: change the explicit artifact version or its declared BOM version in `MODULE.bazel`.
+- Refresh locks: `REPIN=1 bazel run @maven//:pin`; review `maven_install.json` with the declarations, then build and test.
+- Inspect resolved versions/conflicts: check `artifacts`, `dependencies`, and `conflict_resolution` in `maven_install.json`. Trace a target's dependency path with:
 
-* Invokes Bazel's help command, showing basic functionality
+```sh
+bazel query 'somepath(//:app, @maven//:org_slf4j_slf4j_api)'
+```
 
-### `bazel query //...`
+#### Toolchain Changes
 
-* Shows available targets
+- Bazel: `.bazelversion`; Java language/runtime versions: `.bazelrc`.
+- Bazel rules: `MODULE.bazel`. Refresh `MODULE.bazel.lock` with `bazel mod deps --lockfile_mode=update`, then run full verification.
 
-&nbsp;
+### 4. IDE Setup
 
-## 3. Workflows
+---
 
-### Adding A Java Dependency
-
-1) Find the coordinates on Maven Central (<https://central.sonatype.com>) or the library’s docs.
-2) Add the dependency in `MODULE.bazel`, with an explicit version unless a declared BOM supplies it.
-3) Update the Maven lockfile using the workflow below.
-4) Add the dependency to the appropriate target in `BUILD.bazel` and run the main build tasks above.
-
-### Updating Maven Lockfile
-
-1) Run `REPIN=1 bazel run @maven//:pin`
-
-### Upgrading Bazel Version
-
-1) Update `.bazelversion`
-
-### Upgrading Java Version
-
-1) Update the Java toolchain flags in `.bazelrc` and the Java runtime base image digest in `MODULE.bazel` together
-
-&nbsp;
-
-## 4. IDE Setup
-
-Use this command to print the JDK home selected by Bazel for the application:
+Print the project's JDK home:
 
 ```sh
 echo "$(bazel info output_base)/$(bazel cquery @rules_java//toolchains:current_java_runtime --output=starlark --starlark:expr='providers(target)["TemplateVariableInfo"].variables["JAVABASE"]')"
 ```
 
-### IntelliJ IDEA Ultimate
+Follow the [IntelliJ IDEA](https://app.notion.com/p/f4c0a2b7875583b79fa5015d58412fea) or [VS Code](https://app.notion.com/p/4fd0a2b787558204a6c001d0b034f698) setup guide, skipping Maven/Gradle-specific steps.
 
-Follow the instructions here: <https://app.notion.com/p/f4c0a2b7875583b79fa5015d58412fea>
+- IntelliJ: use that path as the Project SDK and **SDK Default** language level.
+- VS Code: use it for `java.jdt.ls.java.home` and the `JavaSE-25` entry in `java.configuration.runtimes`; use `<JDK home>/bin/java` for `java.test.config.javaExec`.
 
-### Visual Studio Code
+Re-run after toolchain changes or cache cleanup.
 
-Follow the instructions here: <https://app.notion.com/p/4fd0a2b787558204a6c001d0b034f698>
+### 5. Concepts
 
-Skip Maven/Gradle-specific steps.
+---
 
-&nbsp;
-
-## 5. References
-
-### Maven
-
-* Maven Central Search: <https://central.sonatype.com>
-
-### Jackson
-
-* Jackson Databind Javadoc: <https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-databind/latest/index.html>
-* Jackson Databind GitHub README Tutorial: <https://github.com/FasterXML/jackson-databind>
-* Jackson Databind Wiki (Including Databind-Specific Annotations): <https://github.com/FasterXML/jackson-databind/wiki>
-* Jackson Annotations Javadoc: <https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/com.fasterxml.jackson.annotation/com/fasterxml/jackson/annotation/package-summary.html>
-* Jackson Annotations GitHub README Tutorial: <https://github.com/FasterXML/jackson-annotations>
-* Jackson Annotations Wiki: <https://github.com/FasterXML/jackson-annotations/wiki>
-
-### Hibernate
-
-* Main Documentation Page: <https://docs.hibernate.org/validator/9.1/reference/en-US/html_single/>
-* Anchor To Available Annotations: <https://docs.hibernate.org/validator/9.1/reference/en-US/html_single/#section-builtin-constraints>
-
-## Concepts
-
-- [Build and OCI Image Packaging](https://app.notion.com/p/3f90a2b787558157a5c2cf7a9b7e92cc?pvs=204)
-- [Product Release Pipelines Across Repositories](https://app.notion.com/p/3f90a2b7875581ef953bca201941e0dd?pvs=204)
-- [Deployment Testing and Promotion](https://app.notion.com/p/3f90a2b7875581de812ffaddc1e44b83?pvs=204)
 - [Shutdown Concepts](https://app.notion.com/p/4080a2b78755818a93b6c7ffa13a809d)
+- [Bazel Java dependencies](https://github.com/bazel-contrib/rules_jvm_external)
+- [JUnit test selection](https://docs.junit.org/5.13.4/user-guide/index.html#running-tests-console-launcher)
 
-## License
+### 6. Appendix
+
+---
+
+#### Java Dependency Attributes
+
+| `BUILD.bazel` attribute | Use |
+| --- | --- |
+| `deps` | Compile-time dependencies; also available at runtime |
+| `runtime_deps` | Runtime-only dependencies |
+| `exports` | Dependencies exposed to consumers of a library |
+| `plugins` | Annotation processors |
+| `neverlink = True` | Compile against a library without including it at runtime |
+
+### License
+
+---
 
 All rights reserved. See [LICENSE](LICENSE).
