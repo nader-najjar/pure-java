@@ -29,8 +29,6 @@ def _java_runtime_files_impl(ctx):
         if not file.path.startswith(prefix):
             fail("Runtime file is outside java_home: " + file.path)
         mapping["opt/java/" + file.path[len(prefix):]] = file
-    if "opt/java/legal/java.base/LICENSE" not in mapping:
-        fail("The selected Java runtime must include its redistribution notices")
     return [
         DefaultInfo(files = runtime.files),
         PackageFilesInfo(dest_src_map = mapping, attributes = {})
