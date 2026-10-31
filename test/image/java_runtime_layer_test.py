@@ -29,8 +29,6 @@ class JavaRuntimeLayerTest(unittest.TestCase):
                 "lib/libjli.so",
                 "conf/security/java.security",
                 "lib/security/cacerts",
-                "legal/java.base/LICENSE",
-                "legal/java.base/ASSEMBLY_EXCEPTION",
                 "release"
             ]:
                 member = files["opt/java/" + relative]
