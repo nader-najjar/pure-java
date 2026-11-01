@@ -1,0 +1,38 @@
+name: Linux container startup
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  startup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: cachix/install-nix-action@d9186cbdca7adedf113a159fa91f725a27866771 # v31
+      - name: Build release
+        run: ./universal-build build
+      - name: Build container from release archive
+        run: |
+          mkdir "$RUNNER_TEMP/release"
+          tar -xzf build/release-artifact.tar.gz -C "$RUNNER_TEMP/release"
+          docker build -t pure-java-smoke "$RUNNER_TEMP/release"
+      - name: Verify application startup
+        run: |
+          status=0
+          timeout 60s docker run --rm --network none \
+            -e STAGE=ALPHA \
+            -e AWS_REGION=us-east-1 \
+            -e AWS_EC2_METADATA_DISABLED=true \
+            -e CALCULATION_RESULTS_TABLE_NAME=smoke \
+            -e EXAMPLE_STRING_VAR=smoke \
+            -e EXAMPLE_INT_VAR=1 \
+            -e EXAMPLE_BOOLEAN_VAR=true \
+            pure-java-smoke > startup.log 2>&1 || status=$?
+          cat startup.log
+          # Missing input must be rejected after dependency injection and application startup.
+          test "$status" -eq 1
+          grep -F 'Executing with stage: ALPHA, awsRegion: us-east-1' startup.log
+          jq -e -s 'any(.[]; .throwable.className == "io.template.execution.exceptions.InvalidInputException" and .throwable.message == "No input provided")' startup.log
