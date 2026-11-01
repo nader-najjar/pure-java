@@ -1,6 +1,8 @@
 package io.template.execution.models;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,4 +39,10 @@ public record ApplicationInput(
         @NotNull
         List<String> exampleListField
 
-) { }
+) {
+    public ApplicationInput {
+        exampleListField = exampleListField == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(exampleListField));
+    }
+}
