@@ -1,4 +1,4 @@
-# pure-java-legacy
+# pure-java
 
 > Java best practices.
 
@@ -8,47 +8,71 @@
 
 - macOS or Linux on ARM64 or x86-64, as configured in `flake.nix`.
 - Install [Nix](https://nix.dev/install-nix).
+- Windows: run `wsl --install` in administrator PowerShell; after restarting and completing Linux user setup, run `wsl -- bash -lc "<INSTALL_INSTRUCTION_HERE>"` and follow the [Nix Windows (WSL2) installation instructions](https://nix.dev/install-nix) to populate the placeholder.
 - Network access for uncached toolchains and dependencies.
 
 Run the commands below from the repository root.
+
+Optional shortcut: configure `ub` as an alias for `./universal-build`:
+
+- Zsh/Bash: add `alias ub='./universal-build'` to `~/.zshrc` or `~/.bashrc`.
+- Windows PowerShell: add `function ub { wsl -- bash -lc 'exec ./universal-build "$@"' ub @args }` to `$PROFILE` (uses the default WSL distribution with Nix installed).
+
+Restart your terminal after saving.
 
 ### 2. Build and Test
 
 ---
 
+#### Universal Build Contract
+
+Universal Build expects:
+
+- `universal-build` at the project root.
+- Any version of Nix on `PATH`.
+- `flake.nix` at the project root.
+- `flake.lock` at the project root, except for `clean` and initial `update-toolchain-lock`.
+- A flake input named `nixpkgs`.
+- A development shell named `buildtime`.
+- `buildtime.BUILD_COMMAND` must contain the shell command to run for `build`.
+- `BUILD_COMMAND` must resolve dependencies and enforce dependency locks.
+- `BUILD_COMMAND` must compile the application as needed.
+- `BUILD_COMMAND` must run tests and checks.
+- `BUILD_COMMAND` must stage all deployable files to `build/release/idiomatic-artifacts/`.
+- `buildtime.RELEASE_TYPE` set to `container` or `static`.
+- `buildtime.UPDATE_IDIOMATIC_LOCK_COMMAND` must contain the shell command to refresh dependency locks for `update-idiomatic-lock`.
+- `buildtime.IDE_PATH_VARS` listing space-separated environment variable names for `ide-paths`.
+- Each variable listed in `IDE_PATH_VARS` to be defined in `buildtime`.
+- A root `Dockerfile` for container releases.
+- A flake package named `runtime` for container releases.
+- The runtime package to provide executable named `ignite`.
+- The runtime package to include all runtime dependencies and environment variables.
+- `ignite` to accept the idiomatic artifacts directory as its first argument.
+- `ignite` to execute the software's main() entrypoint based on the language being used.
+
+For `build`, Universal Build recreates `build/release/` and archives its contents as `build/release-artifact.tar.gz`:
+
+- `idiomatic-artifacts/`.
+- `Dockerfile` for container releases.
+- `runtime-artifacts/` for container releases.
+- `symlink-to-absolute-ignite-script` pointing to the runtime package for container releases.
+
 #### Everyday Commands
 
 | Goal | Command |
 | --- | --- |
-| Compile production Java only | `./universal-build compileJava` |
-| Compile production and test Java without running tests | `./universal-build testClasses` |
-| Run all unit tests, without lint or packaging | `./universal-build test` |
-| Run one test class | `./universal-build test --tests 'io.template.samplebusinesslayer.CalculatorTest'` |
-| Run one test method | `./universal-build test --tests 'io.template.samplebusinesslayer.CalculatorTest.calculatesAddition'` |
-| Check source style | `./universal-build checkstyleMain checkstyleTest` |
-| Run static bug analysis | `./universal-build spotbugsMain spotbugsTest` |
-| Generate coverage report | `./universal-build jacocoTestReport` |
-| Verify all checks without packaging | `./universal-build check` |
-| Assemble runnable JARs without checks | `./universal-build installDist` |
-| Package release without checks | `./universal-build packageRelease` |
-| Full verification and packaging | `./universal-build build` |
+| Build, test, check, and package | `./universal-build build` |
 | Remove build outputs | `./universal-build clean` |
-| List available tasks | `./universal-build tasks --all` |
-
-Tasks run their prerequisites: tests and SpotBugs compile needed classes; packaging compiles and assembles runtime dependencies. `build` runs tests, the 80% coverage gate, Checkstyle, SpotBugs, and Javadoc checks, and produces release artifacts.
-
-Gradle skips up-to-date work. Useful command flags:
-
-- `--rerun-tasks`: force the selected tasks and their prerequisites to execute.
-- `--dry-run`: show the task graph without executing tasks.
-- `--stacktrace`: show failure details.
+| Print IDE toolchain paths | `./universal-build ide-paths` |
+| Update toolchain lock | `./universal-build update-toolchain-lock` |
+| Refresh application dependency locks | `./universal-build update-idiomatic-lock` |
 
 #### Outputs
 
-- Test results: `build/reports/tests/test/index.html`.
-- Coverage: `build/reports/jacoco/test/html/index.html` after `jacocoTestReport`; the coverage gate alone does not generate this report.
-- Checkstyle and SpotBugs: `build/reports/checkstyle/` and `build/reports/spotbugs/`.
-- Runnable application and dependencies: `build/release/executable/lib/`.
+- Test results: `build/quality-reports/tests/test/index.html`.
+- Coverage: `build/quality-reports/jacoco/test/html/index.html`.
+- Checkstyle and SpotBugs: `build/quality-reports/checkstyle/` and `build/quality-reports/spotbugs/`.
+- Runnable application and dependencies: `build/release/idiomatic-artifacts/`.
 - Release archive: `build/release-artifact.tar.gz`.
 
 ### 3. Development Workflows
@@ -59,58 +83,44 @@ Gradle skips up-to-date work. Useful command flags:
 
 Edit `build.gradle.kts`:
 
-- Add: `implementation("group:artifact:version")` (`testImplementation` for tests).
+- Add: `implementation("group:artifact:version")` (see appendix for all types of qualifiers).
 - Remove: delete the declaration and its usages.
 - Upgrade/pin: change the version, or the BOM/constraint that supplies it.
 
-Refresh locks after adding or removing dependencies:
+Refresh locks after adding, removing, or updating dependencies:
 
 ```sh
-./universal-build dependencies --write-locks
+./universal-build update-idiomatic-lock
 ```
-
-For a targeted version update, replace `group:artifact`:
-
-```sh
-./universal-build dependencies --update-locks group:artifact
-```
-
-Inspect a selected version or conflict:
-
-```sh
-./universal-build dependencyInsight --dependency group:artifact --configuration runtimeClasspath
-```
-
-Use `testRuntimeClasspath` for test dependencies.
 
 #### Toolchain Changes
 
 | Change | Files and steps |
 | --- | --- |
-| Java version | Change `chosenJdk` in `flake.nix` and `JavaLanguageVersion.of(...)` in `build.gradle.kts` together. The runtime shell uses the same JDK. |
+| Java version | Change `chosenJdk` in `flake.nix` and `JavaLanguageVersion.of(...)` in `build.gradle.kts` together. The runtime package uses the same JDK. |
 | Add a CLI tool | Add its Nix package to the development shell's `packages` in `flake.nix`. |
-| Nix package set | Change `inputs.nixpkgs.url` in `flake.nix`, then run `./universal-build --update-nix-flake-lockfile`. Review and commit `flake.nix` and `flake.lock`. |
-| Gradle version | Run `./universal-build wrapper --gradle-version X.Y.Z`, then `./universal-build wrapper` to refresh wrapper files with the new version. Review `gradle/wrapper/`, `gradlew`, and `gradlew.bat`. |
-| Build plugin or analysis tool | Change its plugin version or `toolVersion` in `build.gradle.kts`; regenerate dependency locks if its resolved dependencies change. |
+| Nix package set | Change `inputs.nixpkgs.url` in `flake.nix`, then run `./universal-build update-toolchain-lock`. Review and commit `flake.nix` and `flake.lock`. |
+| Gradle version | Select the Gradle major version in `chosenGradle` in `flake.nix`; `flake.lock` pins the exact release. |
+| Build plugin or analysis tool | Change its plugin version or `toolVersion` in `build.gradle.kts`; regenerate idiomatic dependency locks if its resolved dependencies change. |
 
-After toolchain changes, run `./universal-build build` and refresh the IDE's JDK path.
+After toolchain changes, run `./universal-build build`, then run `./universal-build ide-paths` and update the IDE's JDK and Gradle paths.
 
 ### 4. IDE Setup
 
 ---
 
-Print the pinned JDK location:
+Print the pinned JDK and Gradle locations:
 
 ```sh
-./universal-build --print-java-path-for-ide
+./universal-build ide-paths
 ```
 
-Use that path for the project SDK and Gradle JVM. Import the project as Gradle and use its wrapper, not a separately installed Gradle.
+Configure your IDE using these paths:
 
 - [IntelliJ IDEA Ultimate setup](https://app.notion.com/p/f4c0a2b7875583b79fa5015d58412fea)
 - [Visual Studio Code setup](https://app.notion.com/p/4fd0a2b787558204a6c001d0b034f698)
 
-Reload Gradle after dependency changes. Reprint the JDK path after Nix/toolchain changes.
+Reload Gradle after dependency changes. Reprint both paths after Nix/toolchain changes.
 
 ### 5. Concepts
 

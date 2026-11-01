@@ -1,6 +1,7 @@
 package io.template.execution;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,20 @@ class InputSanitizerTest {
     @BeforeEach
     void setUp() {
         sanitizer = new InputSanitizer();
+    }
+
+    @Test
+    void inputOwnsAnUnmodifiableSnapshotOfItsList() {
+        List<String> values = new ArrayList<>();
+        values.add("a");
+        values.add(null);
+        ApplicationInput input = new ApplicationInput("a", 5, true, Instant.EPOCH, values);
+
+        values.set(0, "changed");
+        assertEquals("a", input.exampleListField().get(0));
+        assertEquals(2, input.exampleListField().size());
+        assertEquals(null, input.exampleListField().get(1));
+        assertThrows(UnsupportedOperationException.class, () -> input.exampleListField().add("b"));
     }
 
     @Test

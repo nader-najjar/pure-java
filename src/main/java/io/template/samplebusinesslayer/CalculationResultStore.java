@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.template.environment.models.EnvironmentVariables;
 import io.template.samplebusinesslayer.models.CalculationRequest;
 import io.template.samplebusinesslayer.models.CalculationResult;
@@ -20,6 +21,10 @@ public class CalculationResultStore {
     private final DynamoDbClient dynamoDBClient;
     private final String tableName;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "The injected DynamoDB client is intentionally shared and managed by the application"
+    )
     @Inject
     public CalculationResultStore(DynamoDbClient dynamoDBClient, EnvironmentVariables environmentVariables) {
         this.dynamoDBClient = dynamoDBClient;

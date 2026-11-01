@@ -16,6 +16,9 @@
 
     <module name="TreeWalker">
         <!-- Naming -->
+        <module name="CatchParameterName"/>
+        <module name="LambdaParameterName"/>
+        <module name="RecordComponentName"/>
         <module name="ConstantName"/>
         <module name="LocalVariableName"/>
         <module name="LocalFinalVariableName"/>
@@ -71,11 +74,18 @@
         <!-- Blocks -->
         <module name="AvoidNestedBlocks"/>
         <module name="EmptyBlock"/>
+        <module name="EmptyCatchBlock"/>
         <module name="LeftCurly"/>
         <module name="NeedBraces"/>
         <module name="RightCurly"/>
 
         <!-- Coding -->
+        <module name="FallThrough"/>
+        <module name="StringLiteralEquality"/>
+        <module name="AvoidDoubleBraceInitialization"/>
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="OverloadMethodsDeclarationOrder"/>
         <module name="EmptyStatement"/>
         <module name="EqualsHashCode"/>
         <module name="MissingOverride"/>

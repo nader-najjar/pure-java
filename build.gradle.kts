@@ -1,17 +1,31 @@
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
+import org.gradle.testing.jacoco.tasks.JacocoReportBase
 
 plugins {
     id("java")
+    id("eclipse")
     id("distribution")
     id("jacoco")
     id("checkstyle")
     id("com.github.spotbugs") version "6.0.26"
 }
 
-group = "io.template"
-version = "1.0-SNAPSHOT"
+layout.buildDirectory.set(layout.projectDirectory.dir("build/idiomatic-scratch"))
+reporting.baseDirectory.set(layout.projectDirectory.dir("build/quality-reports"))
+
+// Define where IDE IntelliSense helpers are stored.
+eclipse {
+    classpath {
+        baseSourceOutputDir.set(layout.buildDirectory.dir("ide"))
+        defaultOutputDir = layout.buildDirectory.dir("ide/default").get().asFile
+    }
+}
+
+base {
+    archivesName.set("pure-java")
+}
 
 java {
     toolchain { languageVersion.set(JavaLanguageVersion.of(25)) }
@@ -32,7 +46,6 @@ spotbugs {
     ignoreFailures.set(false)
     effort.set(Effort.MAX)
     reportLevel.set(Confidence.LOW)
-    excludeFilter.set(file("spotbugs-configuration.xml"))
 }
 
 repositories {
@@ -72,6 +85,7 @@ dependencies {
     implementation("org.glassfish.expressly:expressly:6.0.0")
 
     // Spotbugs
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.9.8")
     testCompileOnly("com.github.spotbugs:spotbugs-annotations:4.9.8")
 
     // JUnit
@@ -85,44 +99,27 @@ dependencies {
 }
 
 /**
- * Gradle Clean Task Configurations
- */
-
-tasks.named<Delete>("clean") {
-    delete("bin")
-}
-
-/**
  * Include the application JAR and runtime dependency JARs in the standard build.
  */
 
 distributions {
     main {
         contents {
-            into("lib") {
-                from(tasks.named("jar"))
-                from(configurations.runtimeClasspath)
-            }
+            from(tasks.named("jar"))
+            from(configurations.runtimeClasspath)
         }
     }
 }
 
-tasks.named<Sync>("installDist") {
-    into(layout.buildDirectory.dir("release/executable"))
-}
+tasks.named("distZip") { enabled = false }
+tasks.named("distTar") { enabled = false }
 
-tasks.register<Tar>("packageRelease") {
-    archiveFileName.set("release-artifact.tar.gz")
-    destinationDirectory.set(layout.buildDirectory)
-    compression = Compression.GZIP
-    from("Dockerfile", "flake.nix", "flake.lock", ".dockerignore")
-    from(tasks.named("installDist")) {
-        into("executable")
-    }
+tasks.named<Sync>("installDist") {
+    into(layout.projectDirectory.dir("build/release/idiomatic-artifacts"))
 }
 
 tasks.named("build") {
-    dependsOn(tasks.named("packageRelease"))
+    dependsOn(tasks.named("installDist"))
 }
 
 /**
@@ -136,17 +133,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 /**
- * Gradle Javadoc Task Configurations
- */
-
-tasks.withType<Javadoc>().configureEach {
-    (options as StandardJavadocDocletOptions).apply {
-        memberLevel = JavadocMemberLevel.PUBLIC
-        addBooleanOption("Xdoclint:all,-missing", true)
-    }
-}
-
-/**
  * Gradle Test Task Configurations
  */
 
@@ -155,6 +141,8 @@ tasks.test {
     // Sharing) from working and produces a noisy warning. Disable CDS here since it is a startup
     // optimization for long-lived processes and irrelevant for a short-lived test JVM.
     jvmArgs("-Xshare:off")
+    // Guice uses an unsafe JDK operation, this flag removes the warning
+    systemProperty("guice_custom_class_loading", "CHILD")
     useJUnitPlatform()
     reports { junitXml.required = true; html.required = true }
     testLogging {
@@ -172,17 +160,29 @@ tasks.test {
 tasks.check {
     dependsOn(
         tasks.jacocoTestCoverageVerification,
+        tasks.jacocoTestReport,
         tasks.checkstyleMain,
         tasks.checkstyleTest,
         tasks.spotbugsMain,
-        tasks.spotbugsTest,
-        tasks.javadoc
+        tasks.spotbugsTest
     )
 }
 
 /**
  * Jacaco Configurations
  */
+
+tasks.withType<JacocoReportBase>().configureEach {
+    val excludes = listOf(
+        "io/template/Main.class",
+        "io/template/composition/*"
+    )
+    classDirectories.setFrom(
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(excludes)
+        }
+    )
+}
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
@@ -194,21 +194,16 @@ tasks.jacocoTestReport {
 }
 
 tasks.jacocoTestCoverageVerification {
-    dependsOn(tasks.test)
-
-    val excludes = listOf(
-        "io/template/Main.class",
-        "io/template/composition/*"
-    )
-    classDirectories.setFrom(
-        sourceSets.main.get().output.asFileTree.matching {
-            exclude(excludes)
-        }
-    )
+    dependsOn(tasks.jacocoTestReport)
 
     violationRules {
         rule {
             limit {
+                counter = "INSTRUCTION"
+                minimum = "0.80".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
                 minimum = "0.80".toBigDecimal()
             }
         }
