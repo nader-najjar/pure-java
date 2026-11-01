@@ -60,9 +60,9 @@
             runtimeEnv.JAVA_HOME = "${chosenJdk}";
             text = ''
               idiomatic_artifacts_dir="$1"
-              shift
+              input_json="$2"
               # Guice uses an unsafe JDK operation, this flag removes the warning
-              exec java -Dguice_custom_class_loading=CHILD -XX:MaxRAMPercentage=75.0 -cp "$idiomatic_artifacts_dir/*" io.template.Main "$@"
+              exec java -Dguice_custom_class_loading=CHILD -XX:MaxRAMPercentage=75.0 -cp "$idiomatic_artifacts_dir/*" io.template.Main "$input_json"
             '';
           };
         }
