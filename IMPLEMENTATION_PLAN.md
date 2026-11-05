@@ -85,6 +85,16 @@ Verify observable behavior across all release types and both shell modes, includ
 
 Write the final documentation after the architecture and implementation settle, covering the shared UB tool, consuming-project setup, and materialization service.
 
+## Stretch goal: simple configuration with managed Nix internals
+
+First centralize UB with the current project flakes and behavior. Complete the structural refactor and add `executable` and `shell` through separate reviewable increments. The following abstraction is a later goal, not a prerequisite for centralization:
+
+- Introduce `universal-build.json` as the user-facing configuration for build tools, commands, release type, runtime requirements, environment variables, and IDE paths.
+- Keep the schema small and strictly validated. Maintain the shared Nix implementation once in the UB repository.
+- Have UB manage the internal `flake.nix` and `flake.lock` under `.universal-build/`; users should not need to author or maintain either file.
+- Keep managed configuration and lockfiles version-controlled. Ignore generated build output and disposable caches within the hidden directory.
+- Retain the convenient `./universal-build` launcher and introduce the JSON configuration and hidden-file layout incrementally.
+
 ## Existing checkpoints
 
 Completed before this plan was saved:
