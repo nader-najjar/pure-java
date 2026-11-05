@@ -171,11 +171,18 @@ package_runtime() {
       fail "Could not copy the runtime dependency closure. Fix the Nix error above."
 }
 
-package_release() {
-  if [ "$RELEASE_TYPE" = container ]; then
-    cp Dockerfile build/release/Dockerfile
-  fi
+assemble_release() {
+  case "$RELEASE_TYPE" in
+    static)
+      ;;
+    container)
+      package_runtime
+      cp Dockerfile build/release/Dockerfile
+      ;;
+  esac
+}
 
+archive_release() {
   in_buildtime tar \
     --create \
     --gzip \
@@ -195,27 +202,30 @@ clean() {
     fail "Could not remove build/."
 }
 
-build() {
-  cd "$SCRIPT_DIR"
-
+prepare_release() {
   # Nix copies directories as read-only; make them writable so cleanup can remove their contents.
   if [ -d build/release ]; then
     find build/release -type d -exec chmod u+w {} +
   fi
   rm -rf build/release
   rm -f build/release-artifact.tar.gz
+}
 
+build_idiomatic_artifacts() {
   printf '\033[36mUniversal Build: Running idiomatic build; release packaging follows.\033[0m\n'
   in_buildtime sh -eu -c 'exec sh -eu -c "$BUILD_COMMAND"' ||
     fail "Idiomatic build failed."
-  printf '\033[36mUniversal Build: Idiomatic build succeeded. Packaging release…\033[0m\n'
   validate_idiomatic_artifacts
+}
 
-  if [ "$RELEASE_TYPE" = container ]; then
-    package_runtime
-  fi
+build() {
+  cd "$SCRIPT_DIR"
 
-  package_release
+  prepare_release
+  build_idiomatic_artifacts
+  printf '\033[36mUniversal Build: Idiomatic build succeeded. Packaging release…\033[0m\n'
+  assemble_release
+  archive_release
   printf '\033[32mUniversal Build: BUILD AND PACKAGING SUCCESSFUL\033[0m\n'
 }
 
