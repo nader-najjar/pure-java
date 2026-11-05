@@ -95,6 +95,16 @@ First centralize UB with the current project flakes and behavior. Complete the s
 - Keep managed configuration and lockfiles version-controlled. Ignore generated build output and disposable caches within the hidden directory.
 - Retain the convenient `./universal-build` launcher and introduce the JSON configuration and hidden-file layout incrementally.
 
+## Stretch goal: hide routine idiomatic build-tool setup
+
+After the shared configuration foundation, introduce language presets that let users configure standard projects through `universal-build.json` without manually wiring Gradle, npm, or other idiomatic build tools.
+
+- Provide consistent commands for common tasks such as building, testing, and development, delegating to the appropriate native tools.
+- Manage routine native-tool configuration and integration behind the scenes, with customization available for project-specific needs.
+- Reuse existing capabilities: Nix supplies environments, native tools compile and test, and OCI provides the container distribution format.
+- Own the conventions, integration, and user experience. Do not reimplement the underlying tools or duplicate their entire configuration systems.
+- Capture the integration work once so every project benefits without having to rediscover and maintain the same wiring.
+
 ## Existing checkpoints
 
 Completed before this plan was saved:
