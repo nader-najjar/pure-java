@@ -2,14 +2,12 @@ package io.template.environment;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.template.environment.exceptions.EnvironmentVariableException;
 import io.template.environment.models.EnvironmentVariables;
 import io.template.environment.models.Stage;
 import io.template.shared.utilities.HibernateValidatorUtility;
-import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ValidationException;
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -34,31 +32,23 @@ public final class EnvironmentVariablesFactory {
                 extractBoolean(environment, "EXAMPLE_BOOLEAN_VAR")
         );
 
-        validateEnvironmentVariables(environmentVariables);
+        try {
+            HibernateValidatorUtility.validate(environmentVariables);
+
+        } catch (ValidationException exception) {
+            throw new EnvironmentVariableException("Environment validation failed", exception);
+        }
 
         return environmentVariables;
     }
 
-    private static void validateEnvironmentVariables(EnvironmentVariables environmentVariables) {
-        Set<ConstraintViolation<EnvironmentVariables>> violations = HibernateValidatorUtility.VALIDATOR
-                .validate(environmentVariables);
-
-        if (!violations.isEmpty()) {
-            String errors = violations.stream()
-                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
-                    .collect(Collectors.joining(", "));
-
-            throw new EnvironmentVariableException("Environment validation failed: " + errors);
-        }
-    }
-
-    private static String extractString(Map<String, String> environment, String key) {
+    static String extractString(Map<String, String> environment, String key) {
         String value = environment.get(key);
         ensureVariableExists(key, value);
         return value;
     }
 
-    private static int extractInt(Map<String, String> environment, String key) {
+    static int extractInt(Map<String, String> environment, String key) {
         String value = environment.get(key);
         ensureVariableExists(key, value);
 
@@ -70,14 +60,14 @@ public final class EnvironmentVariablesFactory {
         }
     }
 
-    private static boolean extractBoolean(Map<String, String> environment, String key) {
+    static boolean extractBoolean(Map<String, String> environment, String key) {
         String value = environment.get(key);
         ensureVariableExists(key, value);
 
         return customParseBoolean(key, value);
     }
 
-    private static <E extends Enum<E>> E extractEnum(Map<String, String> environment, String key, Class<E> type) {
+    static <E extends Enum<E>> E extractEnum(Map<String, String> environment, String key, Class<E> type) {
         String value = environment.get(key);
         ensureVariableExists(key, value);
 
@@ -90,7 +80,7 @@ public final class EnvironmentVariablesFactory {
         }
     }
 
-    private static Region extractAWSRegion(Map<String, String> environment, String key) {
+    static Region extractAWSRegion(Map<String, String> environment, String key) {
         String value = environment.get(key);
         ensureVariableExists(key, value);
 
@@ -103,7 +93,7 @@ public final class EnvironmentVariablesFactory {
         return region;
     }
 
-    private static void ensureVariableExists(String key, String value) {
+    static void ensureVariableExists(String key, String value) {
         if (value == null || value.isBlank()) {
             throw new EnvironmentVariableException("Required environment variable '" + key + "' is not set");
         }
@@ -114,7 +104,7 @@ public final class EnvironmentVariablesFactory {
      * We want an error thrown if the value is unexpected, and we abide by the JSON standard of expecting
      * lowercase {@code "true"} or {@code "false"}.
      */
-    private static boolean customParseBoolean(String key, String value) {
+    static boolean customParseBoolean(String key, String value) {
         if ("true".equals(value)) {
             return true;
         }
