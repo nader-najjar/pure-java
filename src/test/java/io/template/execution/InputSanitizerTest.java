@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import io.template.execution.exceptions.InvalidInputException;
 import io.template.execution.models.ApplicationInput;
+import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,6 +25,7 @@ import static io.template.testsupport.SampleJsonInputs.INVALID_JSON_WITH_NULL_ST
 import static io.template.testsupport.SampleJsonInputs.validInput;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -232,7 +234,13 @@ class InputSanitizerTest {
         fields.remove(missingField);
         String json = toJson(fields);
 
-        assertThrows(InvalidInputException.class, () -> sanitizer.sanitize(new String[]{json}));
+        InvalidInputException exception = assertThrows(
+                InvalidInputException.class,
+                () -> sanitizer.sanitize(new String[]{json})
+        );
+
+        assertEquals("Input validation failed", exception.getMessage());
+        assertInstanceOf(ValidationException.class, exception.getCause());
     }
 
     @ParameterizedTest
@@ -248,7 +256,13 @@ class InputSanitizerTest {
         fields.put(nullField, "null");
         String json = toJson(fields);
 
-        assertThrows(InvalidInputException.class, () -> sanitizer.sanitize(new String[]{json}));
+        InvalidInputException exception = assertThrows(
+                InvalidInputException.class,
+                () -> sanitizer.sanitize(new String[]{json})
+        );
+
+        assertEquals("Input validation failed", exception.getMessage());
+        assertInstanceOf(ValidationException.class, exception.getCause());
     }
 
     @Test
