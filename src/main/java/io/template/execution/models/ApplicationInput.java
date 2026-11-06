@@ -26,10 +26,12 @@ public record ApplicationInput(
         String exampleStringField,
 
         @JsonProperty("exampleIntField")
-        int exampleIntField,
+        @NotNull
+        Integer exampleIntField,
 
         @JsonProperty("exampleBooleanField")
-        boolean exampleBooleanField,
+        @NotNull
+        Boolean exampleBooleanField,
 
         @JsonProperty("exampleTimestampField")
         @NotNull
