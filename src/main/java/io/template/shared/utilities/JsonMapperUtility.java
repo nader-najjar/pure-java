@@ -24,6 +24,7 @@ public final class JsonMapperUtility {
                 .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
                 .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+                .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                 .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
 
                 .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
