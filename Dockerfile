@@ -6,4 +6,4 @@ COPY . /custom-software/
 
 USER 10001:10001
 
-ENTRYPOINT ["/custom-software/symlink-to-absolute-ignite-script/bin/ignite", "/custom-software/idiomatic-artifacts"]
+ENTRYPOINT ["/custom-software/execution-script-symlink", "/custom-software/idiomatic-artifacts"]
