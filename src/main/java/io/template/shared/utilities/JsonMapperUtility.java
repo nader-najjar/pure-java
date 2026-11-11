@@ -21,22 +21,21 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   setters, constructors, or factory methods to use. The no-arg constructor doesn't
  *   need an annotation.
  *
- * - Missing record/constructor fields become null for boxed and other reference types, just like JSON null.
- *   Hibernate's @NotNull decides whether null is allowed when using JsonSanitizer.parseAndValidate.
+ * - Boxed types below accept JSON null as Java null. Missing boxed record/constructor fields also become null.
+ *   Hibernate checks @NotNull and other validation constraints when using JsonSanitizer.parseAndValidate.
  *   For objects created with a no-arg constructor, missing fields keep their constructor/default values.
  *   @JsonProperty(required = true) still makes Jackson reject a missing record/constructor field.
  *
- * - Do not use primitives in input models. They can't hold null, so explicit JSON null fails.
- *   Missing primitive record/constructor fields fail too.
+ * - Do not use primitives in input models.
  *
- * - short/Short, int/Integer, long/Long: integer 1 works; quoted "1", decimal 1.0, and
- *   exponent 1e0 fail. Ranges: short -32768 through 32767, int -2147483648 through
- *   2147483647, long -9223372036854775808 through 9223372036854775807. Overflow fails.
+ * - Short, Integer, Long: integer 1 works; quoted "1", decimal 1.0, and
+ *   exponent 1e0 fail. Ranges: Short -32768 through 32767, Integer -2147483648 through
+ *   2147483647, Long -9223372036854775808 through 9223372036854775807. Overflow fails.
  *
- * - float/Float and double/Double: JSON numbers like 1, 1.0, and 1e2 work.
+ * - Float and Double: JSON numbers like 1, 1.0, and 1e2 work.
  *   Quoted numbers like "1" or "1.0" and booleans fail. 0.1 is rounded; 1e400 becomes infinity.
  *
- * - boolean/Boolean: JSON true/false, strings "TRUE"/"False", and integer 0/2 work
+ * - Boolean: JSON true/false, strings "TRUE"/"False", and integer 0/2 work
  *   (0 is false; nonzero is true). Mixed-case "tRuE" and decimal 1.0 fail.
  *
  * - String: strings stay as written; 1 becomes "1", true becomes "true", and null
