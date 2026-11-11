@@ -154,7 +154,23 @@ class JsonMapperNumberTest {
     @ParameterizedTest
     @MethodSource("floatingPointTypes")
     void stillRejectsUnsupportedSpecialFloatingPointStrings(Class<?> type) {
-        for (String json : List.of("\"+Infinity\"", "\"nan\"")) {
+        List<String> rejected = List.of(
+                "\"+Infinity\"",
+                "\"+INF\"",
+                "\"+NaN\"",
+                "\"-NaN\"",
+                "\"NAN\"",
+                "\"nan\"",
+                "\"infinity\"",
+                "\"Inf\"",
+                "\"inf\"",
+                "\" NaN \"",
+                "\" Infinity \"",
+                "\" -Infinity \"",
+                "\" INF \"",
+                "\" -INF \""
+        );
+        for (String json : rejected) {
             assertThrows(
                     JsonProcessingException.class,
                     () -> JsonMapperUtility.MAPPER.readValue(json, type)

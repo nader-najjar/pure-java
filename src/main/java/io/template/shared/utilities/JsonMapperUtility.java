@@ -59,7 +59,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *
  * - Float and Double: JSON numbers like 1, 1.0, and 1e2 work.
  *   Quoted numbers like "1" or "1.0", empty or whitespace-only strings, and booleans fail.
- *   Special strings "NaN", "Infinity", "-Infinity", "INF", and "-INF" are accepted. 0.1 is rounded.
+ *   Accepted special strings (case-sensitive): "NaN", "Infinity", "-Infinity", "INF", and "-INF".
+ *   Other spellings or surrounding whitespace fail. 0.1 is rounded.
  *   Overflow is accepted: 1e400 becomes Float.POSITIVE_INFINITY or Double.POSITIVE_INFINITY;
  *   -1e400 becomes Float.NEGATIVE_INFINITY or Double.NEGATIVE_INFINITY.
  *
