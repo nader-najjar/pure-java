@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,8 +17,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonMapperNumberTest {
+
+    private static final List<String> EMPTY_NUMERIC_STRINGS = List.of(
+            "\"\"",
+            "\" \"",
+            "\"   \"",
+            "\"\\t\"",
+            "\"\\n\"",
+            "\"\\r\\n\"",
+            "\" \\t\\r\\n \""
+    );
 
     @ParameterizedTest
     @MethodSource("numericTypes")
@@ -29,6 +41,73 @@ class JsonMapperNumberTest {
                     () -> type.getSimpleName() + " must reject " + json
             );
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("numericTypes")
+    void rejectsEmptyAndBlankNumericStrings(Class<?> type) {
+        for (String json : EMPTY_NUMERIC_STRINGS) {
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue(json, type),
+                    () -> type.getSimpleName() + " must reject " + json
+            );
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("boxedNumericTypes")
+    void rejectsEmptyAndBlankNestedNumericValues(Class<?> type) {
+        JavaType recordType = JsonMapperUtility.MAPPER.getTypeFactory().constructParametricType(
+                NumericValue.class,
+                type
+        );
+        JavaType listType = JsonMapperUtility.MAPPER.getTypeFactory().constructCollectionType(List.class, type);
+        JavaType mapType = JsonMapperUtility.MAPPER.getTypeFactory().constructMapType(Map.class, String.class, type);
+        JavaType nestedType = JsonMapperUtility.MAPPER.getTypeFactory().constructCollectionType(List.class, mapType);
+
+        for (String json : EMPTY_NUMERIC_STRINGS) {
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue("{\"value\":" + json + "}", recordType)
+            );
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue("[" + json + "]", listType)
+            );
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue("{\"value\":" + json + "}", mapType)
+            );
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue("[{\"value\":" + json + "}]", nestedType)
+            );
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("boxedNumericTypes")
+    void preservesMissingAndNullNumericValues(Class<?> type) throws JsonProcessingException {
+        JavaType recordType = JsonMapperUtility.MAPPER.getTypeFactory().constructParametricType(
+                NumericValue.class,
+                type
+        );
+        NumericValue<?> missing = JsonMapperUtility.MAPPER.readValue("{}", recordType);
+        NumericValue<?> explicitNull = JsonMapperUtility.MAPPER.readValue("{\"value\":null}", recordType);
+
+        assertNull(missing.value());
+        assertNull(explicitNull.value());
+
+        JavaType listType = JsonMapperUtility.MAPPER.getTypeFactory().constructCollectionType(List.class, type);
+        List<?> list = JsonMapperUtility.MAPPER.readValue("[null]", listType);
+        assertEquals(1, list.size());
+        assertNull(list.getFirst());
+
+        JavaType mapType = JsonMapperUtility.MAPPER.getTypeFactory().constructMapType(Map.class, String.class, type);
+        Map<?, ?> map = JsonMapperUtility.MAPPER.readValue("{\"value\":null}", mapType);
+        assertEquals(1, map.size());
+        assertNull(map.get("value"));
     }
 
     @ParameterizedTest
@@ -54,6 +133,33 @@ class JsonMapperNumberTest {
         assertEquals(1.5f, JsonMapperUtility.MAPPER.readValue("1.5", Float.class));
         assertEquals(100.0, JsonMapperUtility.MAPPER.readValue("1e2", Double.class));
         assertEquals(new BigDecimal("1.5"), JsonMapperUtility.MAPPER.readValue("1.5", BigDecimal.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("floatingPointTypes")
+    void preservesSpecialFloatingPointStrings(Class<?> type) throws JsonProcessingException {
+        Number notANumber = (Number) JsonMapperUtility.MAPPER.readValue("\"NaN\"", type);
+        assertTrue(Double.isNaN(notANumber.doubleValue()));
+
+        for (String json : List.of("\"Infinity\"", "\"INF\"")) {
+            Number positiveInfinity = (Number) JsonMapperUtility.MAPPER.readValue(json, type);
+            assertEquals(Double.POSITIVE_INFINITY, positiveInfinity.doubleValue());
+        }
+        for (String json : List.of("\"-Infinity\"", "\"-INF\"")) {
+            Number negativeInfinity = (Number) JsonMapperUtility.MAPPER.readValue(json, type);
+            assertEquals(Double.NEGATIVE_INFINITY, negativeInfinity.doubleValue());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("floatingPointTypes")
+    void stillRejectsUnsupportedSpecialFloatingPointStrings(Class<?> type) {
+        for (String json : List.of("\"+Infinity\"", "\"nan\"")) {
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue(json, type)
+            );
+        }
     }
 
     @Test
@@ -111,7 +217,28 @@ class JsonMapperNumberTest {
         );
     }
 
+    static Stream<Class<?>> boxedNumericTypes() {
+        return Stream.of(
+                Short.class,
+                Integer.class,
+                Long.class,
+                Float.class,
+                Double.class
+        );
+    }
+
+    static Stream<Class<?>> floatingPointTypes() {
+        return Stream.of(
+                float.class,
+                Float.class,
+                double.class,
+                Double.class
+        );
+    }
+
     record NumericInput(Integer value) { }
+
+    record NumericValue<T>(T value) { }
 
     enum ExampleChoice { FIRST }
 }

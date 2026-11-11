@@ -53,12 +53,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   For objects created with a no-arg constructor, missing fields keep their constructor/default values.
  *   @JsonProperty(required = true) still makes Jackson reject a missing record/constructor field.
  *
- * - Short, Integer, Long: integer 1 works; quoted "1", decimal 1.0, and
- *   exponent 1e0 fail. Ranges: Short -32768 through 32767, Integer -2147483648 through
+ * - Short, Integer, Long: integer 1 works. Quoted "1", empty or whitespace-only strings,
+ *   decimal 1.0, and exponent 1e0 fail. Ranges: Short -32768 through 32767, Integer -2147483648 through
  *   2147483647, Long -9223372036854775808 through 9223372036854775807. Out-of-range values are rejected.
  *
  * - Float and Double: JSON numbers like 1, 1.0, and 1e2 work.
- *   Quoted numbers like "1" or "1.0" and booleans fail. 0.1 is rounded.
+ *   Quoted numbers like "1" or "1.0", empty or whitespace-only strings, and booleans fail.
+ *   Special strings "NaN", "Infinity", "-Infinity", "INF", and "-INF" are accepted. 0.1 is rounded.
  *   Overflow is accepted: 1e400 becomes Float.POSITIVE_INFINITY or Double.POSITIVE_INFINITY;
  *   -1e400 becomes Float.NEGATIVE_INFINITY or Double.NEGATIVE_INFINITY.
  *
@@ -115,11 +116,15 @@ public final class JsonMapperUtility {
 
                 .withCoercionConfig(
                         LogicalType.Integer,
-                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                        config -> config
+                                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail)
                 )
                 .withCoercionConfig(
                         LogicalType.Float,
-                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                        config -> config
+                                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail)
                 )
 
                 .withCoercionConfig(
