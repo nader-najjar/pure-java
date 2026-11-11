@@ -83,11 +83,8 @@ class JsonMapperNumberTest {
     @Test
     void leavesNonNumericTargetsAndMapKeysAlone() throws JsonProcessingException {
         assertEquals("1", JsonMapperUtility.MAPPER.readValue("\"1\"", String.class));
-        assertEquals("1", JsonMapperUtility.MAPPER.readValue("1", String.class));
-        assertEquals(true, JsonMapperUtility.MAPPER.readValue("\"TRUE\"", Boolean.class));
-        assertEquals(true, JsonMapperUtility.MAPPER.readValue("2", Boolean.class));
         assertEquals(Instant.ofEpochSecond(1), JsonMapperUtility.MAPPER.readValue("\"1\"", Instant.class));
-        assertEquals(ExampleChoice.FIRST, JsonMapperUtility.MAPPER.readValue("\"0\"", ExampleChoice.class));
+        assertEquals(ExampleChoice.FIRST, JsonMapperUtility.MAPPER.readValue("\"FIRST\"", ExampleChoice.class));
         assertEquals(
                 Map.of(1, "x"),
                 JsonMapperUtility.MAPPER.readValue("{\"1\":\"x\"}", new TypeReference<Map<Integer, String>>() { })

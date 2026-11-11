@@ -37,11 +37,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   Overflow is accepted: 1e400 becomes Float.POSITIVE_INFINITY or Double.POSITIVE_INFINITY;
  *   -1e400 becomes Float.NEGATIVE_INFINITY or Double.NEGATIVE_INFINITY.
  *
- * - Boolean: JSON true/false, strings "TRUE"/"False", and integer 0/2 work
- *   (0 is false; nonzero is true). Mixed-case "tRuE" and decimal 1.0 fail.
+ * - Boolean: JSON true/false and null are accepted. Strings (including "true"/"false" and "")
+ *   and numbers fail. Missing fields follow the boxed-type rules above.
  *
- * - String: strings stay as written; 1 becomes "1", true becomes "true", and null
- *   becomes Java null. Arrays and objects fail.
+ * - String: use quoted JSON strings, including "" for an empty string. Numbers, booleans,
+ *   arrays, and objects fail. JSON null and missing record/constructor fields become Java null.
+ *   Hibernate handles @NotNull; the no-arg constructor and required-field exceptions above still apply.
  *
  * - Instant: ISO text ("2025-01-02T03:04:05Z"), numbers, and numeric strings work.
  *   Timestamps are seconds, not milliseconds: 1 and "1" are one second after the epoch,
@@ -51,8 +52,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   integers are epoch-day counts (0 is 1970-01-01). LocalDateTime accepts ISO text or
  *   [2024, 3, 1, 12, 30, 0].
  *
- * - Enums accept exact, case-sensitive names or ordinals: 0 and "0" select the first
- *   value. Wrong case, unknown names, and out-of-range ordinals fail.
+ * - Enums accept case-sensitive names, not number positions. Both 0 and "0" fail.
+ *   Wrong case and unknown names fail. JSON null and missing record/constructor fields
+ *   become null, with the same validation and required-field rules as above.
  *
  * - Element arrays (for example, String[]), List<T>, and Set<T> need JSON arrays.
  *   Scalars aren't wrapped; one-item arrays aren't unwrapped. Lists keep order, sets
@@ -85,6 +87,7 @@ public final class JsonMapperUtility {
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .disable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
                 .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS)
                 .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
                 .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                 .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
@@ -105,6 +108,21 @@ public final class JsonMapperUtility {
                 .withCoercionConfig(
                         LogicalType.Float,
                         config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                )
+
+                .withCoercionConfig(
+                        LogicalType.Boolean,
+                        config -> config
+                                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                )
+                .withCoercionConfig(
+                        LogicalType.Textual,
+                        config -> config
+                                .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                                .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail)
                 )
 
                 .addModule(new JavaTimeModule())
