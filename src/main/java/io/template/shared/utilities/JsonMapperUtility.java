@@ -10,8 +10,35 @@ import com.fasterxml.jackson.databind.type.LogicalType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /*
- * Quick guide to common MAPPER inputs (Jackson 2.20.1). These are the defaults; annotations or custom deserializers can
- * change a property.
+ * Only use these types in JSON input models (Jackson 2.20.1):
+ *
+ * - Short
+ *
+ * - Integer
+ *
+ * - Long
+ *
+ * - Float
+ *
+ * - Double
+ *
+ * - Boolean
+ *
+ * - String
+ *
+ * - Enums
+ *
+ * - POJOs and records
+ *
+ * - List<T>
+ *
+ * - Map<String, V>
+ *
+ * Every field, list element, and map value must have a declared type from this list.
+ * Behavior is not guaranteed for anything else, including primitives, Object, arrays,
+ * Set, and date/time types such as Instant. Use String for dates/times and parse them in application code.
+ *
+ * The notes below describe the defaults; annotations or custom deserializers can change a property.
  *
  * - One JSON value only. Malformed JSON, duplicate keys in one object, or a second top-level value fails. Unknown
  *   properties are ignored.
@@ -21,12 +48,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   setters, constructors, or factory methods to use. The no-arg constructor doesn't
  *   need an annotation.
  *
- * - Boxed types below accept JSON null as Java null. Missing boxed record/constructor fields also become null.
+ * - These types accept JSON null as Java null. Missing record/constructor fields also become null.
  *   Hibernate checks @NotNull and other validation constraints when using JsonSanitizer.parseAndValidate.
  *   For objects created with a no-arg constructor, missing fields keep their constructor/default values.
  *   @JsonProperty(required = true) still makes Jackson reject a missing record/constructor field.
- *
- * - Do not use primitives in input models.
  *
  * - Short, Integer, Long: integer 1 works; quoted "1", decimal 1.0, and
  *   exponent 1e0 fail. Ranges: Short -32768 through 32767, Integer -2147483648 through
@@ -44,25 +69,14 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   arrays, and objects fail. JSON null and missing record/constructor fields become Java null.
  *   Hibernate handles @NotNull; the no-arg constructor and required-field exceptions above still apply.
  *
- * - Instant: ISO text ("2025-01-02T03:04:05Z"), numbers, and numeric strings work.
- *   Timestamps are seconds, not milliseconds: 1 and "1" are one second after the epoch,
- *   1.5 is 1.5 seconds, and 1000 is 1000 seconds.
- *
- * - Some other date/time shapes: LocalDate accepts "2024-03-01" or [2024, 3, 1];
- *   integers are epoch-day counts (0 is 1970-01-01). LocalDateTime accepts ISO text or
- *   [2024, 3, 1, 12, 30, 0].
- *
  * - Enums accept case-sensitive names, not number positions. Both 0 and "0" fail.
  *   Wrong case and unknown names fail. JSON null and missing record/constructor fields
  *   become null, with the same validation and required-field rules as above.
  *
- * - Element arrays (for example, String[]), List<T>, and Set<T> need JSON arrays.
- *   Scalars aren't wrapped; one-item arrays aren't unwrapped. Lists keep order, sets
- *   drop duplicates, and reference elements may be null.
+ * - List<T> needs a JSON array, keeps order, and allows null elements.
+ *   A single value isn't wrapped in a list, and a one-item array isn't unwrapped into a value.
  *
- * - Only use Map<String, V> for input maps, and don't use Java Object as an input type
- *   (including fields, array/collection elements, or map values).
- *   Behavior is not guaranteed if you use other map key types or Object.
+ * - Map<String, V> needs a JSON object. Values follow their declared type.
  *
  * - MAPPER.readValue turns JSON into Java values; it doesn't run Hibernate validation.
  *   JsonSanitizer.parseAndValidate maps first, then validates. Nested constraints
