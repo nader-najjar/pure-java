@@ -30,10 +30,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *
  * - Short, Integer, Long: integer 1 works; quoted "1", decimal 1.0, and
  *   exponent 1e0 fail. Ranges: Short -32768 through 32767, Integer -2147483648 through
- *   2147483647, Long -9223372036854775808 through 9223372036854775807. Overflow fails.
+ *   2147483647, Long -9223372036854775808 through 9223372036854775807. Out-of-range values are rejected.
  *
  * - Float and Double: JSON numbers like 1, 1.0, and 1e2 work.
- *   Quoted numbers like "1" or "1.0" and booleans fail. 0.1 is rounded; 1e400 becomes infinity.
+ *   Quoted numbers like "1" or "1.0" and booleans fail. 0.1 is rounded.
+ *   Overflow is accepted: 1e400 becomes Float.POSITIVE_INFINITY or Double.POSITIVE_INFINITY;
+ *   -1e400 becomes Float.NEGATIVE_INFINITY or Double.NEGATIVE_INFINITY.
  *
  * - Boolean: JSON true/false, strings "TRUE"/"False", and integer 0/2 work
  *   (0 is false; nonzero is true). Mixed-case "tRuE" and decimal 1.0 fail.
