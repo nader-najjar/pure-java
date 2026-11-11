@@ -60,11 +60,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   Scalars aren't wrapped; one-item arrays aren't unwrapped. Lists keep order, sets
  *   drop duplicates, and reference elements may be null.
  *
- * - Map<K, V> needs a JSON object. Keys are text: "1" becomes integer key 1 for
- *   Map<Integer, V>; invalid keys fail. Values follow their target type.
- *
- * - Nested records/objects use the same rules. Object gets maps, lists, and natural
- *   scalar values; JsonNode keeps the tree, including integer vs decimal number nodes.
+ * - Only use Map<String, V> for input maps, and don't use Java Object as an input type
+ *   (including fields, array/collection elements, or map values).
+ *   Behavior is not guaranteed if you use other map key types or Object.
  *
  * - MAPPER.readValue turns JSON into Java values; it doesn't run Hibernate validation.
  *   JsonSanitizer.parseAndValidate maps first, then validates. Nested constraints
