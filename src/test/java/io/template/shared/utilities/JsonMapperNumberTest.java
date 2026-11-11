@@ -23,8 +23,11 @@ class JsonMapperNumberTest {
     @MethodSource("numericTypes")
     void rejectsQuotedNumbers(Class<?> type) {
         for (String json : List.of("\"1\"", "\"-1\"", "\"1.0\"", "\"1e0\"", "\" 1 \"")) {
-            assertThrows(JsonProcessingException.class, () -> JsonMapperUtility.MAPPER.readValue(json, type),
-                    () -> type.getSimpleName() + " must reject " + json);
+            assertThrows(
+                    JsonProcessingException.class,
+                    () -> JsonMapperUtility.MAPPER.readValue(json, type),
+                    () -> type.getSimpleName() + " must reject " + json
+            );
         }
     }
 
@@ -55,16 +58,26 @@ class JsonMapperNumberTest {
 
     @Test
     void rejectsQuotedNumbersInRecordsAndContainers() {
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("{\"value\":\"1\"}", NumericInput.class));
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", Integer[].class));
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", int[].class));
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", new TypeReference<List<Double>>() { }));
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("{\"x\":\"1\"}", new TypeReference<Map<String, Long>>() { }));
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("{\"value\":\"1\"}", NumericInput.class)
+        );
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", Integer[].class)
+        );
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", int[].class)
+        );
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("[\"1\"]", new TypeReference<List<Double>>() { })
+        );
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("{\"x\":\"1\"}", new TypeReference<Map<String, Long>>() { })
+        );
     }
 
     @Test
@@ -75,14 +88,30 @@ class JsonMapperNumberTest {
         assertEquals(true, JsonMapperUtility.MAPPER.readValue("2", Boolean.class));
         assertEquals(Instant.ofEpochSecond(1), JsonMapperUtility.MAPPER.readValue("\"1\"", Instant.class));
         assertEquals(ExampleChoice.FIRST, JsonMapperUtility.MAPPER.readValue("\"0\"", ExampleChoice.class));
-        assertEquals(Map.of(1, "x"),
-                JsonMapperUtility.MAPPER.readValue("{\"1\":\"x\"}", new TypeReference<Map<Integer, String>>() { }));
+        assertEquals(
+                Map.of(1, "x"),
+                JsonMapperUtility.MAPPER.readValue("{\"1\":\"x\"}", new TypeReference<Map<Integer, String>>() { })
+        );
     }
 
     static Stream<Class<?>> numericTypes() {
-        return Stream.of(byte.class, Byte.class, short.class, Short.class, int.class, Integer.class,
-                long.class, Long.class, float.class, Float.class, double.class, Double.class,
-                BigInteger.class, BigDecimal.class, Number.class);
+        return Stream.of(
+                byte.class,
+                Byte.class,
+                short.class,
+                Short.class,
+                int.class,
+                Integer.class,
+                long.class,
+                Long.class,
+                float.class,
+                Float.class,
+                double.class,
+                Double.class,
+                BigInteger.class,
+                BigDecimal.class,
+                Number.class
+        );
     }
 
     record NumericInput(Integer value) { }

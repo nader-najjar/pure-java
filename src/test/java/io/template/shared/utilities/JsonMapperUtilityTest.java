@@ -30,11 +30,15 @@ class JsonMapperUtilityTest {
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{\"number\":null,\"enabled\":null,\"text\":null}"})
     void leavesNotNullChecksForHibernate(String json) throws JsonProcessingException {
-        assertEquals(new RequiredInput(null, null, null),
-                JsonMapperUtility.MAPPER.readValue(json, RequiredInput.class));
+        assertEquals(
+                new RequiredInput(null, null, null),
+                JsonMapperUtility.MAPPER.readValue(json, RequiredInput.class)
+        );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> JsonSanitizer.parseAndValidate(json, RequiredInput.class));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> JsonSanitizer.parseAndValidate(json, RequiredInput.class)
+        );
 
         assertInstanceOf(ValidationException.class, exception.getCause());
         assertTrue(exception.getCause().getMessage().contains("number:"));
@@ -59,8 +63,10 @@ class JsonMapperUtilityTest {
         String json = "{\"value\":null}";
         assertNull(JsonMapperUtility.MAPPER.readValue(json, MutableInput.class).value);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> JsonSanitizer.parseAndValidate(json, MutableInput.class));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> JsonSanitizer.parseAndValidate(json, MutableInput.class)
+        );
 
         assertInstanceOf(ValidationException.class, exception.getCause());
     }
@@ -68,11 +74,15 @@ class JsonMapperUtilityTest {
     @Test
     void validatesMissingNestedFieldsWithValid() throws JsonProcessingException {
         String json = "{\"child\":{}}";
-        assertEquals(new NestedInput(new RequiredInput(null, null, null)),
-                JsonMapperUtility.MAPPER.readValue(json, NestedInput.class));
+        assertEquals(
+                new NestedInput(new RequiredInput(null, null, null)),
+                JsonMapperUtility.MAPPER.readValue(json, NestedInput.class)
+        );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> JsonSanitizer.parseAndValidate(json, NestedInput.class));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> JsonSanitizer.parseAndValidate(json, NestedInput.class)
+        );
 
         assertInstanceOf(ValidationException.class, exception.getCause());
         assertTrue(exception.getCause().getMessage().contains("child.number:"));
@@ -81,30 +91,38 @@ class JsonMapperUtilityTest {
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{\"value\":null}"})
     void stillRejectsMissingAndNullPrimitiveRecordFields(String json) {
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue(json, PrimitiveInput.class));
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue(json, PrimitiveInput.class)
+        );
     }
 
     @Test
     void stillHonorsJacksonRequiredFields() {
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue("{}", JacksonRequiredInput.class));
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue("{}", JacksonRequiredInput.class)
+        );
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "{\"number\":1.0}",
-        "{\"number\":1e0}",
-        "{\"number\":true}",
-        "{\"number\":2147483648}",
-        "{\"number\":[1]}",
-        "{\"number\":1,\"number\":2}",
-        "{} {}",
-        "{"
-    })
+    @ValueSource(
+            strings = {
+                "{\"number\":1.0}",
+                "{\"number\":1e0}",
+                "{\"number\":true}",
+                "{\"number\":2147483648}",
+                "{\"number\":[1]}",
+                "{\"number\":1,\"number\":2}",
+                "{} {}",
+                "{"
+            }
+    )
     void keepsExistingTypeAndJsonChecks(String json) {
-        assertThrows(JsonProcessingException.class,
-                () -> JsonMapperUtility.MAPPER.readValue(json, NullableInput.class));
+        assertThrows(
+                JsonProcessingException.class,
+                () -> JsonMapperUtility.MAPPER.readValue(json, NullableInput.class)
+        );
     }
 
     record NullableInput(Integer number, Boolean enabled, String text) { }

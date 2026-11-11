@@ -97,10 +97,14 @@ public final class JsonMapperUtility {
 
                 .disable(MapperFeature.USE_BASE_TYPE_AS_DEFAULT_IMPL)
 
-                .withCoercionConfig(LogicalType.Integer,
-                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail))
-                .withCoercionConfig(LogicalType.Float,
-                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail))
+                .withCoercionConfig(
+                        LogicalType.Integer,
+                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                )
+                .withCoercionConfig(
+                        LogicalType.Float,
+                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                )
 
                 .addModule(new JavaTimeModule())
 
