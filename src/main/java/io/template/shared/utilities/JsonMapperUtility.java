@@ -13,9 +13,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * - One JSON value only. Malformed JSON, duplicate keys in one object, or a second top-level value fails. Unknown
  *   properties are ignored.
  *
- * - Records bind; properties/creators marked for Jackson (like @JsonProperty or
- *   @JsonCreator) can bind too. Bean fields/getters/setters aren't auto-detected;
- *   unannotated creators aren't either, except the default no-arg constructor.
+ * - Jackson can fill in records from JSON without extra annotations. For regular classes,
+ *   use annotations like @JsonProperty or @JsonCreator to tell it which fields, getters,
+ *   setters, constructors, or factory methods to use. The no-arg constructor doesn't
+ *   need an annotation.
  *
  * - Do not use primitives in input models. Explicit JSON null fails for primitives; boxed and other reference types
  *   accept null. Missing record/creator properties fail for boxed and primitive types. Missing mutable-bean properties
