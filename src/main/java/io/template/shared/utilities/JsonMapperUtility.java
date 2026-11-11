@@ -18,9 +18,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *   setters, constructors, or factory methods to use. The no-arg constructor doesn't
  *   need an annotation.
  *
- * - Do not use primitives in input models. Explicit JSON null fails for primitives; boxed and other reference types
- *   accept null. Missing record/creator properties fail for boxed and primitive types. Missing mutable-bean properties
- *   keep their constructor/default values.
+ * - Missing record/constructor fields become null for boxed and other reference types, just like JSON null.
+ *   Hibernate's @NotNull decides whether null is allowed when using JsonSanitizer.parseAndValidate.
+ *   For objects created with a no-arg constructor, missing fields keep their constructor/default values.
+ *   @JsonProperty(required = true) still makes Jackson reject a missing record/constructor field.
+ *
+ * - Do not use primitives in input models. They can't hold null, so explicit JSON null fails.
+ *   Missing primitive record/constructor fields fail too.
  *
  * - short/Short, int/Integer, long/Long: integer 1 and quoted "1" work; decimal 1.0 and
  *   exponent 1e0 fail. Ranges: short -32768 through 32767, int -2147483648 through
@@ -56,7 +60,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * - Nested records/objects use the same rules. Object gets maps, lists, and natural
  *   scalar values; JsonNode keeps the tree, including integer vs decimal number nodes.
  *
- * - MAPPER.readValue parses and binds; it doesn't run Hibernate validation.
+ * - MAPPER.readValue turns JSON into Java values; it doesn't run Hibernate validation.
  *   JsonSanitizer.parseAndValidate maps first, then validates. Nested constraints
  *   cascade only with @Valid.
  */
@@ -75,7 +79,7 @@ public final class JsonMapperUtility {
                 .disable(MapperFeature.AUTO_DETECT_SETTERS)
 
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
+                .disable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
                 .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
                 .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
