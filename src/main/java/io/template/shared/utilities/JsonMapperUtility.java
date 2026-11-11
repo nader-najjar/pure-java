@@ -3,7 +3,10 @@ package io.template.shared.utilities;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.cfg.CoercionAction;
+import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.type.LogicalType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /*
@@ -26,12 +29,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * - Do not use primitives in input models. They can't hold null, so explicit JSON null fails.
  *   Missing primitive record/constructor fields fail too.
  *
- * - short/Short, int/Integer, long/Long: integer 1 and quoted "1" work; decimal 1.0 and
+ * - short/Short, int/Integer, long/Long: integer 1 works; quoted "1", decimal 1.0, and
  *   exponent 1e0 fail. Ranges: short -32768 through 32767, int -2147483648 through
  *   2147483647, long -9223372036854775808 through 9223372036854775807. Overflow fails.
  *
- * - float/Float and double/Double: 1, 1.0, 1e2, and parseable numeric strings work;
- *   booleans fail. 0.1 is rounded; 1e400 becomes infinity.
+ * - float/Float and double/Double: JSON numbers like 1, 1.0, and 1e2 work.
+ *   Quoted numbers like "1" or "1.0" and booleans fail. 0.1 is rounded; 1e400 becomes infinity.
  *
  * - boolean/Boolean: JSON true/false, strings "TRUE"/"False", and integer 0/2 work
  *   (0 is false; nonzero is true). Mixed-case "tRuE" and decimal 1.0 fail.
@@ -93,6 +96,11 @@ public final class JsonMapperUtility {
                 .disable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
 
                 .disable(MapperFeature.USE_BASE_TYPE_AS_DEFAULT_IMPL)
+
+                .withCoercionConfig(LogicalType.Integer,
+                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail))
+                .withCoercionConfig(LogicalType.Float,
+                        config -> config.setCoercion(CoercionInputShape.String, CoercionAction.Fail))
 
                 .addModule(new JavaTimeModule())
 
