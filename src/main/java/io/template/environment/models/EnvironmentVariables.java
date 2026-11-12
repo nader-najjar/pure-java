@@ -1,22 +1,22 @@
 package io.template.environment.models;
 
-import software.amazon.awssdk.regions.Region;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
-/**
- * Environment variables configuration.
- *
- * @param stage Deployment stage
- * @param awsRegion Deployment region
- * @param calculationResultsTableName DynamoDB table that stores calculation results
- * @param exampleStringVar Example string environment variable
- * @param exampleIntVar Example integer environment variable
- * @param exampleBooleanVar Example boolean environment variable
- */
+// Environment values stay strings. Convert them where the application needs a different type.
 public record EnvironmentVariables(
-        Stage stage,
-        Region awsRegion,
-        String calculationResultsTableName,
-        String exampleStringVar,
-        int exampleIntVar,
-        boolean exampleBooleanVar
+        @JsonProperty("STAGE") @NotNull @NotBlank
+        @Pattern(regexp = "ALPHA|BETA|GAMMA|PRODUCTION") String stage,
+        @JsonProperty("AWS_REGION") @NotNull @NotBlank String awsRegion,
+        @JsonProperty("CALCULATION_RESULTS_TABLE_NAME") @NotNull @NotBlank String calculationResultsTableName,
+        @JsonProperty("EXAMPLE_STRING_VAR") @NotNull @NotBlank String exampleStringVar,
+        @JsonProperty("EXAMPLE_INT_VAR") @NotNull @NotBlank
+        @Pattern(regexp = "[+-]?\\p{javaDigit}+")
+        @DecimalMin("-2147483648") @DecimalMax("2147483647") String exampleIntVar,
+        @JsonProperty("EXAMPLE_BOOLEAN_VAR") @NotNull @NotBlank
+        @Pattern(regexp = "true|false") String exampleBooleanVar
 ) { }

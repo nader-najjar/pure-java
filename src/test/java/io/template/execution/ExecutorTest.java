@@ -2,7 +2,6 @@ package io.template.execution;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.template.environment.models.EnvironmentVariables;
-import io.template.environment.models.Stage;
 import io.template.samplebusinesslayer.CalculationResultStore;
 import io.template.samplebusinesslayer.Calculator;
 import io.template.samplebusinesslayer.models.CalculationRequest;
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.regions.Region;
 
 import static io.template.testsupport.SampleJsonInputs.validInput;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,8 +38,8 @@ class ExecutorTest {
 
     @BeforeEach
     void setUp() {
-        when(environmentVariables.stage()).thenReturn(Stage.BETA);
-        when(environmentVariables.awsRegion()).thenReturn(Region.US_EAST_1);
+        when(environmentVariables.stage()).thenReturn("BETA");
+        when(environmentVariables.awsRegion()).thenReturn("us-east-1");
 
         executor = new Executor(environmentVariables, calculator, calculationResultStore);
     }
