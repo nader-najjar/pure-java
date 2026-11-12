@@ -36,8 +36,8 @@ public class Executor {
     }
 
     public void execute(String[] args) {
-        Stage stage = environmentVariables.stage();
-        Region awsRegion = environmentVariables.awsRegion();
+        Stage stage = Stage.valueOf(environmentVariables.stage());
+        Region awsRegion = Region.of(environmentVariables.awsRegion());
         LOGGER.info("Executing with stage: {}, awsRegion: {}", stage, awsRegion);
 
         if (args == null || args.length == 0) {
