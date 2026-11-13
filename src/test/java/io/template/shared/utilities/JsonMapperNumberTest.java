@@ -123,6 +123,7 @@ class JsonMapperNumberTest {
     void keepsExistingNullBehavior(Class<?> type) throws JsonProcessingException {
         if (type.isPrimitive()) {
             assertThrows(JsonProcessingException.class, () -> JsonMapperUtility.MAPPER.readValue("null", type));
+
         } else {
             assertNull(JsonMapperUtility.MAPPER.readValue("null", type));
         }

@@ -2,7 +2,7 @@ package io.template.composition;
 
 import java.util.Map;
 
-import io.template.environment.models.EnvironmentVariables;
+import io.template.environment.EnvironmentVariables;
 import io.template.shared.utilities.JsonMapperUtility;
 import io.template.testsupport.SampleEnvironmentMaps;
 import org.junit.jupiter.params.ParameterizedTest;

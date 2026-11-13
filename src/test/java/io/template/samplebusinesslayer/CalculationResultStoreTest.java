@@ -2,7 +2,7 @@ package io.template.samplebusinesslayer;
 
 import java.util.Set;
 
-import io.template.environment.models.EnvironmentVariables;
+import io.template.environment.EnvironmentVariables;
 import io.template.samplebusinesslayer.models.CalculationRequest;
 import io.template.samplebusinesslayer.models.CalculationResult;
 import org.junit.jupiter.api.BeforeEach;

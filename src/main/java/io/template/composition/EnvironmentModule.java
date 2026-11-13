@@ -3,7 +3,7 @@ package io.template.composition;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import io.template.environment.models.EnvironmentVariables;
+import io.template.environment.EnvironmentVariables;
 import io.template.shared.utilities.HibernateValidatorUtility;
 import io.template.shared.utilities.JsonMapperUtility;
 
