@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.template.environment.models.EnvironmentVariables;
+import io.template.environment.EnvironmentVariables;
 import io.template.samplebusinesslayer.models.CalculationRequest;
 import io.template.samplebusinesslayer.models.CalculationResult;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

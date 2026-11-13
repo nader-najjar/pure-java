@@ -3,7 +3,6 @@ package io.template.environment;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import io.template.environment.models.EnvironmentVariables;
 import io.template.shared.utilities.HibernateValidatorUtility;
 import io.template.shared.utilities.JsonMapperUtility;
 import io.template.testsupport.SampleEnvironmentMaps;
